@@ -1,43 +1,37 @@
 // server.js
 
 const express = require("express");
-const sequelize = require("./models"); // Import sequelize instance
-const User = require("./models/user"); // Import User model
-
+const db = require("./models");
 const app = express();
-app.use(express.json()); // Middleware for parsing JSON
 
-// Sync database models
-sequelize
-  .sync({ force: true }) // Set 'force: true' to drop and recreate tables
-  .then(() => {
-    console.log("Database synced");
-  })
-  .catch((err) => {
-    console.error("Error syncing the database:", err);
-  });
+app.use(express.json()); // Middleware to parse JSON bodies
 
-// Create a new user
+// Route to create a user
 app.post("/users", async (req, res) => {
   try {
-    const user = await User.create(req.body);
-    res.json(user);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    // Create a new user with the request body
+    const user = await db.User.create(req.body);
+    // Respond with the newly created user
+    res.status(201).json(user);
+  } catch (error) {
+    console.error("Error creating user:", error);
+    // Respond with an error message
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get all users
+// Route to get all users
 app.get("/users", async (req, res) => {
   try {
-    const users = await User.findAll();
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const users = await db.User.findAll();
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+const PORT = process.env.PORT || 8181;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

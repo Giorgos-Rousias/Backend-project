@@ -46,12 +46,55 @@ exports.getEducation = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-    return res.status(200).json({ message: "Education update endpoint" });
+    try {
+        const userId = req.user.id; // Extract userId from route parameters
+        const { id, institution, degree, startYear, endYear } = req.body; // Extract education details from the request body
+
+        // Check if the user exists
+        const user = await db.User.findByPk(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Update the user's education
+        const education = await db.Education.findOne({ where: { id, userId } });
+        if (!education) return res.status(404).json({ message: "Education not found" });
+
+        education.institution = institution;
+        education.degree = degree;
+        education.startYear = startYear;
+        education.endYear = endYear;
+
+        await education.save();
+
+        res.status(200).json(education);
+    } catch (error) {
+        console.error("Error updating education:", error);
+        res.status(500).json({ error: error.message });
+    }
 };
 exports.delete = async (req, res) => {
-    return res.status(200).json({ message: "Education delete endpoint" });
+    try {
+        const userId = req.user.id; // Extract userId from route parameters
+        const { id } = req.body; // Extract education id from the request body
+
+        // Check if the user exists
+        const user = await db.User.findByPk(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Delete the user's education
+        const education = await db.Education.findOne({ where: { id, userId } });
+        if (!education) return res.status(404).json({ message: "Education not found" });
+
+        await education.destroy();
+
+        res.status(200).json({"message": "Education deleted successfully"});
+    } catch (error) {
+        console.error("Error deleting education:", error);
+        res.status(500).json({ error: error.message });
+    }
 };
 
+
+//! For testing purposes ONLY
 exports.getAll = async (req, res) => {
     try {
         const education = await db.Education.findAll();

@@ -26,20 +26,25 @@ exports.create = async (req, res) => {
 };
 
 exports.getEducation = async (req, res) => {
-    try {
-        const education = await db.Education.findAll({
-            where: {
-                userId: req.user.id,
-            },
-        });
-        res.status(200).json(education);
-    } catch (error) {
-        console.error("Error fetching education:", error);
-        res.status(500).json({ error: error.message });
-    }
+  try {
+    // Example database call
+    const education = await db.Education.findAll();
 
-    return res.status(200).json({ message: "Education get endpoint" });
+    // Ensure only one response is sent
+    res.status(200).json(education);
+  } catch (error) {
+    console.error("Error fetching education:", error);
+
+    // Handle errors properly
+    if (!res.headersSent) {
+      // Check if headers are already sent
+      res
+        .status(500)
+        .json({ message: "Error fetching education", error: error.message });
+    }
+  }
 };
+
 exports.update = async (req, res) => {
     return res.status(200).json({ message: "Education update endpoint" });
 };

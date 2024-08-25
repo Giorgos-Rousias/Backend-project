@@ -1,12 +1,20 @@
-// server.js
 const express = require("express");
 const app = express();
-const userRoutes = require("./routes/userRoutes");
 
+require('dotenv').config(); // Load environment variables
+
+// Import routes
+const userRoutes = require("./routes/userRoutes");
+const userInfoRoutes = require("./routes/userInfoRoutes");
+const authRoutes = require("./routes/authRoutes");
+
+// Middleware
 app.use(express.json()); // Middleware to parse JSON bodies
 
-// Use user routes
+// Add routes
 app.use("/users", userRoutes);
+app.use("/auth", authRoutes); // Mount authentication routes
+app.use("/userInfo", userInfoRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

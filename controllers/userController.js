@@ -2,11 +2,13 @@
 const { UniqueConstraintError, ValidationError } = require("sequelize");
 const db = require("../models");
 
+
+//? creates a new user
 exports.createUser = async (req, res) => {
   try {
-    const { name, surname, email, password, phoneNumber, isAdmin } = req.body;
-    const photoBuffer = req.file ? req.file.buffer : null;
-    const hasPhoto = !!photoBuffer;
+    const { name, surname, email, password, phoneNumber, isAdmin } = req.body; // Get the user data from the request body
+    const photoBuffer = req.file ? req.file.buffer : null; // Get the photo buffer if it exists
+    const hasPhoto = !!photoBuffer; // Check if the user has a photo
 
     // Create the new user
     const user = await db.User.create({
@@ -15,7 +17,7 @@ exports.createUser = async (req, res) => {
       email,
       password,
       phoneNumber,
-      isAdmin: isAdmin === "true",
+      isAdmin: isAdmin === "true", // Convert the string to a boolean
       photo: photoBuffer,
       hasPhoto,
     });
@@ -24,14 +26,12 @@ exports.createUser = async (req, res) => {
   } catch (error) {
     console.error("Error creating user:", error);
 
-    if (error instanceof UniqueConstraintError) {
-      return res.status(400).json({ message: "Email already in use" });
-    }
+    // console.log(error.errors.map(e => e.type));
+    const type = error.errors.map(e => e.type);
+    const message = error.errors.map(e => e.message);
 
-    if (error instanceof ValidationError) {
-      return res
-        .status(400)
-        .json({ message: "Validation error", errors: error.errors });
+    if (error instanceof UniqueConstraintError || error instanceof ValidationError) { // Check if the error is due to a unique constraint violation
+      return res.status(400).json({ message: message[0], errors: type[0] });
     }
 
     res
@@ -40,6 +40,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
+//? returns all users
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await db.User.findAll();
@@ -50,8 +51,9 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+//! From here on down, the code is for testing purposes ONLY
 
-// For testing purposes
+//? returns all users without the photo attribute
 exports.getUsersWithoutPhoto = async (req, res) => {
   try {
     const users = await db.User.findAll({

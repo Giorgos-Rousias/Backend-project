@@ -1,6 +1,10 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../sequelize");
 
+const Education = require("./education");
+const Experience = require("./experience");
+const Skill = require("./skill");
+
 const User = sequelize.define(
   "User",
   {
@@ -17,29 +21,17 @@ const User = sequelize.define(
       allowNull: false,
       unique: true,
       validate: {
-        isEmail: true,
+        isEmail: true
       },
     },
     password: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notNull: { msg: "Password is required" },
-        isValidLength(value) {
-          const passwordRegex = /^.{2,32}$/;
-          if (!passwordRegex.test(value)) {
-            throw new Error(
-              "Password must be between 2 and 32 characters long"
-            );
-          }
-        },
-      },
     },
     phoneNumber: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        notNull: { msg: "Phone number is required" },
         isValidPhoneNumber(value) {
           const phoneNumberRegex = /^\+?[1-9]\d{1,14}$/; // E.164 international format
           if (!phoneNumberRegex.test(value)) {
@@ -53,17 +45,21 @@ const User = sequelize.define(
       defaultValue: false,
     },
     hasPhoto: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false  // User starts without a photo
+      type: DataTypes.BOOLEAN,
+      defaultValue: false, // User starts without a photo
     },
     photo: {
       type: DataTypes.BLOB, // Storing photo as binary data (BLOB)
       allowNull: true,
-    }
+    },
   },
   {
     timestamps: true, // Adds 'createdAt' and 'updatedAt'
   }
 );
+
+// User.hasMany(Education, { foreignKey: "userId" });
+// User.hasMany(Experience, { foreignKey: "userId", as: "experience" });
+// User.hasMany(Skill, { foreignKey: "userId", as: "skills" });
 
 module.exports = User;

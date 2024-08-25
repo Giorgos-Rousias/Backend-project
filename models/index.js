@@ -4,6 +4,14 @@ const Experience = require("./experience"); // Import the experience model
 const Skill = require("./skill"); // Import the skill model
 const Education = require("./education"); // Import the education model
 
+User.hasMany(Education, { foreignKey: "userId" });
+Education.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(Experience, { foreignKey: "userId" });
+Experience.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(Skill, { foreignKey: "userId" });
+Skill.belongsTo(User, { foreignKey: "userId" });
 
 const db = {
     sequelize,

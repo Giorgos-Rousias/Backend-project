@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../sequelize");
+const User = require("./user");
 
 const Education = sequelize.define(
   "Education",
@@ -24,5 +25,7 @@ const Education = sequelize.define(
     timestamps: true,
   }
 );
+
+// Education.belongsTo(User, { foreignKey: "userId" });
 
 module.exports = Education;

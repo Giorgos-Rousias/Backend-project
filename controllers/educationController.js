@@ -27,8 +27,14 @@ exports.create = async (req, res) => {
 
 exports.getEducation = async (req, res) => {
   try {
-    // Example database call
-    const education = await db.Education.findAll();
+    const userId = req.user.id; // Extract userId from route parameters
+
+    // Check if the user exists
+    const user = await db.User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Fetch the user's education
+    const education = await db.Education.findAll({ where: { userId } });
 
     // Ensure only one response is sent
     res.status(200).json(education);

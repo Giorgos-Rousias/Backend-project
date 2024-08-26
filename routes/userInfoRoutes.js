@@ -14,8 +14,14 @@ router.post("/education", authenticateToken, educationContoller.create);
 router.put("/education", authenticateToken, educationContoller.update);
 router.delete("/education", authenticateToken, educationContoller.delete);
 
+router.get("skills", authenticateToken, skillController.getSkill);
+router.post("/skills", authenticateToken, skillController.create);
+router.put("/skills", authenticateToken, skillController.update);
+router.delete("/skills", authenticateToken, skillController.delete);
 
 //! For testing purposes ONLY
 router.get("/allEducation", educationContoller.getAll);
+// router.get("/allExperience", experienceController.getAll);
+router.get("/allSkills", skillController.getAll);
 
 module.exports = router;

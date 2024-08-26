@@ -77,6 +77,7 @@ exports.update = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
 exports.delete = async (req, res) => {
     try {
         const userId = req.user.id; // Extract userId from route parameters

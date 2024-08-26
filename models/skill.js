@@ -4,7 +4,7 @@ const sequelize = require("../sequelize");
 const Skill = sequelize.define(
   "Skill",
   {
-    name: {
+    skill: {
       type: DataTypes.STRING,
       allowNull: false,
     },

@@ -95,7 +95,7 @@ exports.delete = async (req, res) => {
         // Delete the experience
         await experience.destroy();
     
-        res.status(204).json();
+        res.status(200).json({ message: "Experience deleted successfully" });
     } catch (error) {
         console.error("Error deleting experience:", error);
         res.status(500).json({ error: error.message });

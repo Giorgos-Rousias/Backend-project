@@ -14,7 +14,7 @@ router.post("/education", authenticateToken, educationContoller.create);
 router.put("/education", authenticateToken, educationContoller.update);
 router.delete("/education", authenticateToken, educationContoller.delete);
 
-router.get("skills", authenticateToken, skillController.getSkill);
+router.get("/skills", authenticateToken, skillController.getSkill);
 router.post("/skills", authenticateToken, skillController.create);
 router.put("/skills", authenticateToken, skillController.update);
 router.delete("/skills", authenticateToken, skillController.delete);

@@ -13,6 +13,15 @@ Experience.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(Skill, { foreignKey: "userId" });
 Skill.belongsTo(User, { foreignKey: "userId" });
 
+// Inside your User model file (models/user.js)
+User.belongsToMany(User, {
+  as: 'Friends',
+  through: 'UserFriends', // Junction table
+  foreignKey: 'userId',
+  otherKey: 'friendId',
+});
+
+
 const db = {
     sequelize,
     User,

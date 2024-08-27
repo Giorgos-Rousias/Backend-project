@@ -7,6 +7,7 @@ require('dotenv').config(); // Load environment variables
 const userRoutes = require("./routes/userRoutes");
 const userInfoRoutes = require("./routes/userInfoRoutes");
 const authRoutes = require("./routes/authRoutes");
+const friendlistRoutes = require("./routes/friendlistRoutes");
 
 // Middleware
 app.use(express.json()); // Middleware to parse JSON bodies
@@ -15,6 +16,7 @@ app.use(express.json()); // Middleware to parse JSON bodies
 app.use("/users", userRoutes);
 app.use("/auth", authRoutes); // Mount authentication routes
 app.use("/userInfo", userInfoRoutes);
+app.use("/friendlist", friendlistRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

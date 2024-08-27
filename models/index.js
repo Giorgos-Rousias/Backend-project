@@ -3,6 +3,7 @@ const User = require("./user"); // Import the user model
 const Experience = require("./experience"); // Import the experience model
 const Skill = require("./skill"); // Import the skill model
 const Education = require("./education"); // Import the education model
+const UserFriends = require("./userFriends"); // Import the userFriends model
 
 User.hasMany(Education, { foreignKey: "userId" });
 Education.belongsTo(User, { foreignKey: "userId" });
@@ -27,7 +28,8 @@ const db = {
     User,
     Experience,
     Skill,
-    Education
+    Education,
+    UserFriends
     // Add other models here if needed
 };
 

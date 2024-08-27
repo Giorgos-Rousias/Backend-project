@@ -22,7 +22,10 @@ const UserFriends = sequelize.define("UserFriends", {
   },
   status: {
     type: DataTypes.STRING, // E.g., 'pending', 'accepted', 'rejected'
-    defaultValue: "accepted", // Optional status for friend requests
+    defaultValue: "pending", // Default to 'pending' when a request is made
+    validate: {
+      isIn: [["pending", "accepted"]],
+    },
   },
 });
 

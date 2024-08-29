@@ -3,7 +3,7 @@ const db = require("../models");
 exports.create = async (req, res) => {
     try {
         const userId  = req.user.id; // Extract userId from route parameters
-        const { institution, degree, startYear, endYear } = req.body; // Extract education details from the request body
+        const { institution, degree, startYear, endYear, isPrivate } = req.body; // Extract education details from the request body
 
         // Check if the user exists
         const user = await db.User.findByPk(userId);
@@ -16,6 +16,7 @@ exports.create = async (req, res) => {
           startYear,
           endYear,
           userId, // Associate the education with the correct user
+          isPrivate,
         });
 
         res.status(201).json(education);
@@ -54,7 +55,7 @@ exports.getEducation = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const userId = req.user.id; // Extract userId from route parameters
-        const { id, institution, degree, startYear, endYear } = req.body; // Extract education details from the request body
+        const { id, institution, degree, startYear, endYear, isPrivate } = req.body; // Extract education details from the request body
 
         // Check if the user exists
         const user = await db.User.findByPk(userId);
@@ -68,6 +69,7 @@ exports.update = async (req, res) => {
         education.degree = degree;
         education.startYear = startYear;
         education.endYear = endYear;
+        education.isPrivate = isPrivate;
 
         await education.save();
 

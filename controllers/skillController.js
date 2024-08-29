@@ -3,7 +3,7 @@ const db = require("../models");
 exports.create = async (req, res) => {
     try {
         const userId = req.user.id; // Extract userId from route parameters
-        const { skill, description } = req.body; // Extract skill details from the request body
+        const { skill, description, isPrivate } = req.body; // Extract skill details from the request body
     
         // Check if the user exists
         const user = await db.User.findByPk(userId);
@@ -14,6 +14,7 @@ exports.create = async (req, res) => {
           skill,
           description,
           userId, // Associate the skill with the correct user
+          isPrivate,
         });
 
         res.status(201).json(newSkill);
@@ -53,7 +54,7 @@ exports.getSkill = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const userId = req.user.id; // Extract userId from route parameters
-        const { id, skill, description } = req.body; // Extract skill details from the request body
+        const { id, skill, description, isPrivate } = req.body; // Extract skill details from the request body
 
         // Check if the user exists
         const user = await db.User.findByPk(userId);
@@ -66,6 +67,8 @@ exports.update = async (req, res) => {
         // Update the skill
         existingSkill.skill = skill;
         existingSkill.description = description;
+        existingSkill.isPrivate = isPrivate;
+
         await existingSkill.save();
 
         res.status(200).json(existingSkill);

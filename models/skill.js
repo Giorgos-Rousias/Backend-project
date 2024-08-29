@@ -9,6 +9,11 @@ const Skill = sequelize.define(
       allowNull: false,
     },
     description: DataTypes.TEXT,
+    isPrivate: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
   {
     timestamps: true,

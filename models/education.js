@@ -20,7 +20,13 @@ const Education = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-  }, {
+    isPrivate: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+  },
+  {
     timestamps: true,
   }
 );

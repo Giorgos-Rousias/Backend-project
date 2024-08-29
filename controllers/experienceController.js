@@ -3,7 +3,7 @@ const db = require("../models");
 exports.create = async (req, res) => {
     try {
         const userId = req.user.id; // Extract userId from route parameters
-        const { company, role, startYear, endYear } = req.body; // Extract experience details from the request body
+        const { company, role, startYear, endYear, isPrivate } = req.body; // Extract experience details from the request body
     
         // Check if the user exists
         const user = await db.User.findByPk(userId);
@@ -11,11 +11,12 @@ exports.create = async (req, res) => {
     
         // Create new experience for the user
         const experience = await db.Experience.create({
-        company,
-        role,
-        startYear,
-        endYear,
-        userId, // Associate the experience with the correct user
+          company,
+          role,
+          startYear,
+          endYear,
+          userId, // Associate the experience with the correct user
+          isPrivate,
         });
     
         res.status(201).json(experience);
@@ -54,7 +55,7 @@ exports.getExperience = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const userId = req.user.id; // Extract userId from route parameters
-        const { id, company, role, startYear, endYear } = req.body; // Extract experience details from the request body
+        const { id, company, role, startYear, endYear, isPrivate } = req.body; // Extract experience details from the request body
     
         // Check if the user exists
         const user = await db.User.findByPk(userId);
@@ -69,6 +70,7 @@ exports.update = async (req, res) => {
         experience.role = role;
         experience.startYear = startYear;
         experience.endYear = endYear;
+        experience.isPrivate = isPrivate;
     
         await experience.save();
     

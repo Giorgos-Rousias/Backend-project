@@ -19,7 +19,12 @@ const Experience = sequelize.define(
     endYear: {
       type: DataTypes.INTEGER,
       allowNull: true,
-    },
+    }, 
+    isPrivate: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    }
   }, {
     timestamps: true,
   }

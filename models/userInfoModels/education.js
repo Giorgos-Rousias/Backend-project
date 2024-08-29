@@ -1,14 +1,14 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../sequelize");
+const sequelize = require("../../sequelize");
 
-const Experience = sequelize.define(
-  "Experience",
+const Education = sequelize.define(
+  "Education",
   {
-    company: {
+    institution: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    role: {
+    degree: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -19,15 +19,18 @@ const Experience = sequelize.define(
     endYear: {
       type: DataTypes.INTEGER,
       allowNull: true,
-    }, 
+    },
     isPrivate: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: false
-    }
-  }, {
+      defaultValue: false,
+    },
+  },
+  {
     timestamps: true,
   }
 );
 
-module.exports = Experience;
+// Education.belongsTo(User, { foreignKey: "userId" });
+
+module.exports = Education;

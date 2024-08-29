@@ -2,9 +2,9 @@ const express = require("express");
 const router = express.Router();
 
 // Controllers
-const educationContoller = require("../controllers/educationController");
-const experienceController = require("../controllers/experienceController");
-const skillController = require("../controllers/skillController");
+const educationContoller = require("../controllers/userInfoControllers/educationController");
+const experienceController = require("../controllers/userInfoControllers/experienceController");
+const skillController = require("../controllers/userInfoControllers/skillController");
 
 // Middleware
 const authenticateToken = require("../middlewares/authMiddleware");

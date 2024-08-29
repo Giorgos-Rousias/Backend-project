@@ -1,9 +1,10 @@
 const sequelize = require("../sequelize");
 const User = require("./user"); // Import the user model
-const Experience = require("./experience"); // Import the experience model
-const Skill = require("./skill"); // Import the skill model
-const Education = require("./education"); // Import the education model
+const Experience = require("./userInfoModels/experience"); // Import the experience model
+const Skill = require("./userInfoModels/skill"); // Import the skill model
+const Education = require("./userInfoModels/education"); // Import the education model
 const UserFriends = require("./userFriends"); // Import the userFriends model
+const Post = require("./post"); // Import the post model
 
 User.hasMany(Education, { foreignKey: "userId" });
 Education.belongsTo(User, { foreignKey: "userId" });
@@ -22,6 +23,13 @@ User.belongsToMany(User, {
   otherKey: 'friendId',
 });
 
+Post.associate = (models) => {
+  Post.belongsTo(models.User, {
+    foreignKey: 'creatorUserId',
+    as: 'creator', // Alias for the associated user
+    onDelete: 'CASCADE',
+  });
+}
 
 const db = {
     sequelize,
@@ -29,7 +37,8 @@ const db = {
     Experience,
     Skill,
     Education,
-    UserFriends
+    UserFriends,
+    Post,
     // Add other models here if needed
 };
 

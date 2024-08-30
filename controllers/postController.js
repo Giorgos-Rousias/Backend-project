@@ -31,46 +31,43 @@ exports.createPost = async (req, res) => {
 	}
 };
 
-//! Πρέπει να την κάνω να επιστρέφει τα ποστ που έχει ανεβάσει ο ίδιος ο χρήστης
-//! οι φίλοι του και τα ποστ στα οποία έχουν κάνει interact (like, comment)  οι φίλοι του
-//! Αυτά πρέπει να γυρνάνε με την χρονολογική σειρά που έχουν αναρτηθεί αλλά να μην επιστρέφει άπειρα ποστ 
-//! αλλά να έχει έναν περιορισμό μέχρι να κάνει scroll ο χρήστης
-exports.getFriendsPosts = async (req, res) => {
-	try {
-		const user = req.user.id; // Assuming you're using authentication and have req.user
 
-		const friends = await db.UserFriends.findAll({
-			where: {
-				userId: user,
-			},
-		});
+// exports.getFriendsPosts = async (req, res) => {
+// 	try {
+// 		const user = req.user.id; // Assuming you're using authentication and have req.user
 
-		if (!friends) {
-			return res.status(404).json({ error: "No friends found" });
-		}
+// 		const friends = await db.UserFriends.findAll({
+// 			where: {
+// 				userId: user,
+// 			},
+// 		});
 
-		const friendIds = friends.map((friend) => friend.friendId);
+// 		if (!friends) {
+// 			return res.status(404).json({ error: "No friends found" });
+// 		}
 
-		const posts = await db.Post.findAll({
-			where: {
-				creatorUserId: friendIds,
-			},
-			include: {
-				model: db.User,
-				attributes: ["username"],
-			},
-		});
+// 		const friendIds = friends.map((friend) => friend.friendId);
 
-		if (!posts) {
-			return res.status(404).json({ error: "No posts found" });
-		}
+// 		const posts = await db.Post.findAll({
+// 			where: {
+// 				creatorUserId: friendIds,
+// 			},
+// 			include: {
+// 				model: db.User,
+// 				attributes: ["username"],
+// 			},
+// 		});
 
-		res.status(200).json(posts);
-	} catch (error) {
-		console.error("Error getting friends' posts:", error);
-		res.status(500).json({ error: error.message });
-	}
-};
+// 		if (!posts) {
+// 			return res.status(404).json({ error: "No posts found" });
+// 		}
+
+// 		res.status(200).json(posts);
+// 	} catch (error) {
+// 		console.error("Error getting friends' posts:", error);
+// 		res.status(500).json({ error: error.message });
+// 	}
+// };
 
 exports.getUserSuggestedPosts = async (req, res) => {
 	try {

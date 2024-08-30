@@ -8,22 +8,23 @@ exports.createPost = async (req, res) => {
 		const creatorUserId = req.user.id; // Assuming you're using authentication and have req.user
 		const file = req.file ? req.file.buffer : null; // Get the photo buffer if it exists
 
-		const fileCategory = await determineFileCategory(buffer);
-
-		if (fileCategory) {
-			// File is of a supported type
-			res.status(200).json({
-				message: "File uploaded successfully",
-				fileCategory,
-			});
-		} else {
-			// File type is not supported
-			res.status(400).json({ error: "Unsupported file type" });
+		if (!text && !file) {
+			return res.status(400).json({ error: "You must provide text or a file to create a post" });
 		}
 
-		const post = await db.Post.create({creatorUserId, text, photoBuffer, file});
+		postBody = {creatorUserId, text};
+		if (file){
+			const fileType = await determineFileCategory(req.file.originalname);
 
-		res.status(201).json(post);
+			if (fileType == null) {
+				// File type is not supported
+				res.status(400).json({ error: "Unsupported file type" });
+			}
+			potBody = {creatorUserId, text, file, fileType};
+		}
+		await db.Post.create(postBody);
+
+		res.status(200).json("Post created successfully");
 	} catch (error) {
 		console.error("Error creating post:", error);
 		res.status(500).json({ error: error.message });
@@ -73,26 +74,26 @@ exports.getFriendsPosts = async (req, res) => {
 
 exports.updatePost = async (req, res) => {
 	try {
-		const { text } = req.body;
-		const file = req.file ? req.file.buffer : null; // Get the photo buffer if it exists
-
-		const fileType = await determineFileCategory(buffer);
-
 		const post = await db.Post.findByPk(req.params.id);
 		if (!post) {
 			return res.status(404).json({ error: "Post not found" });
 		}
 
+		const { text } = req.body;
+		const file = req.file ? req.file.buffer : null; // Get the photo buffer if it exists
+		
+		if (!text && !file) {
+			return res.status(400).json({ error: "You must provide text or a file to update a post" });
+		}
+
+		const fileType = await determineFileCategory(req.file.originalname);
+
 		if (post.creatorUserId !== req.user.id) {
 			return res.status(403).json({ error: "You are not authorized to update this post" });
 		}
 
-		if (fileType) {
-			// File is of a supported type
-			res.status(200).json({
-				message: "File uploaded successfully",
-				fileType,
-			});
+		if (fileType == null) {
+			res.status(400).json({ error: "Unsupported file type" });
 		}
 
 		post.text = text;
@@ -120,6 +121,7 @@ exports.deletePost = async (req, res) => {
 		}
 
 		await post.destroy();
+		res.status(200).json({ message: "Post deleted successfully" });
 	}
 	catch (error) {
 		console.error("Error deleting post:", error);
@@ -188,7 +190,7 @@ exports.createComment = async (req, res) => {
 	try {
 		const { text } = req.body;
 
-		const post = await db.Post.findByPk(req.user.id);
+		const post = await db.Post.findByPk(req.params.id);
 		if (!post) {
 			return res.status(404).json({ error: "Post not found" });
 		}
@@ -209,8 +211,15 @@ exports.createComment = async (req, res) => {
 
 exports.deleteComment = async (req, res) => {
 	try {
-		const comment = await db.Comment.findByPk(req.params.id);
-		if (!comment) {
+		const post = await db.Post.findByPk(req.params.id);
+
+		if (!post) {
+			return res.status(404).json({ error: "Post not found" });
+		}
+
+		const comment = await db.Comment.findOne({where: { id: req.params.commentId, postId: req.params.id }});
+
+		if (comment == null) {
 			return res.status(404).json({ error: "Comment not found" });
 		}
 
@@ -227,11 +236,33 @@ exports.deleteComment = async (req, res) => {
 	}
 }
 
-//For testing purposes
+// Get all comments for a specific post
+exports.getPostsComments = async (req, res) => {
+	try {
+		const post = await db.Post.findByPk(req.params.id);
+		if (!post) {
+			return res.status(404).json({ error: "Post not found" });
+		}
+
+		const comments = await db.Comment.findAll({
+			where: {
+				postId: post.id,
+			}
+		});
+
+		res.status(200).json(comments);
+	} catch (error) {
+		console.error("Error getting post comments:", error);
+		res.status(500).json({ error: error.message });
+	}
+};
+
+// For testing purposes
 exports.getAllPosts = async (req, res) => {
 	try {
 		const posts = await db.Post.findAll({
 			attributes: {
+				exclude: ["file"],
 				include: [
 				// Count the number of likes
 				[fn('COUNT', col('Likes.id')), 'likesCount'],

@@ -20,7 +20,7 @@ const Post = sequelize.define("Post", {
     allowNull: true,
   },
   fileType: {
-    type: DataTypes.ENUM("photo", "video", "audio"),
+    type: DataTypes.ENUM("image", "video", "audio"),
     allowNull: true,
   }
 });

@@ -1,35 +1,32 @@
-    const fileType = require("file-type");
+const mime = require('mime-types');
 
-    const SUPPORTED_MIME_TYPES = {
+const SUPPORTED_MIME_TYPES = {
     image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
     video: ["video/mp4", "video/webm", "video/ogg"],
     audio: ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4"],
-    };
+};
 
-    /**
-     * Determine if a file is an image, video, or audio file.
-     * @param {Buffer} buffer - The buffer of the file.
-     * @returns {Promise<string|null>} - The file type ('image', 'video', 'audio') or null if unsupported.
-     */
-    async function determineFileCategory(buffer) {
-    try {
-        const type = await fileType.fromBuffer(buffer);
-        if (type) {
-            if (SUPPORTED_MIME_TYPES.image.includes(type.mime)) {
-                return "image";
-            }
-            if (SUPPORTED_MIME_TYPES.video.includes(type.mime)) {
-                return "video";
-            }
-            if (SUPPORTED_MIME_TYPES.audio.includes(type.mime)) {
-                return "audio";
-            }
+/**
+ * Determine if a file is an image, video, or audio file based on its extension.
+ * @param {string} filePath - The file path or name.
+ * @returns {string|null} - The file type ('image', 'video', 'audio') or null if unsupported.
+ */
+const determineFileCategoryFromExtension = (filePath) => {
+    // Get MIME type from file extension
+    const mimeType = mime.lookup(filePath);
+
+    if (mimeType) {
+        if (SUPPORTED_MIME_TYPES.image.includes(mimeType)) {
+            return "image";
         }
-        return null; // File type not supported
-    } catch (error) {
-        console.error("Error determining file type:", error);
-        return null;
+        if (SUPPORTED_MIME_TYPES.video.includes(mimeType)) {
+            return "video";
+        }
+        if (SUPPORTED_MIME_TYPES.audio.includes(mimeType)) {
+            return "audio";
+        }
     }
-    }
+    return null; // File type not supported
+};
 
-    module.exports = determineFileCategory;
+module.exports = determineFileCategoryFromExtension;

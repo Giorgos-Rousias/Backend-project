@@ -6,6 +6,8 @@ const postController = require("../controllers/postController");
 
 const authenticateToken = require("../middlewares/authMiddleware");
 
+router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts);
+
 router.post( "/createPost", authenticateToken, uploadMiddleware.single("file"), postController.createPost);
 router.put( "/:id/updatePost", authenticateToken, postController.updatePost);
 router.delete( "/:id/deletePost", authenticateToken, postController.deletePost);

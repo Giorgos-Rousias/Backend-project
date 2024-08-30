@@ -72,6 +72,117 @@ exports.getFriendsPosts = async (req, res) => {
 	}
 };
 
+exports.getUserSuggestedPosts = async (req, res) => {
+	try {
+		const userId = req.user.id;
+
+		const numberOfPosts = req.body.numberOfPosts ? req.body.numberOfPosts : 3; // Default to 10 posts
+		const date = req.body.lastPostDate ? new Date(req.body.lastPostDate) : new Date(); // Default to current date
+
+		let suggestedPosts = [];
+
+		const user = await db.User.findByPk(userId);
+
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		// Get the user's posts
+		const userPosts = await db.Post.findAll({
+			where: {
+				creatorUserId: userId,
+				createdAt: {
+					[Op.lt]: date,
+				},
+			},
+			order: [["createdAt", "DESC"]],
+		});
+
+		suggestedPosts = suggestedPosts.concat(userPosts);
+
+		const friends = await db.UserFriends.findAll({
+			where: {
+				userId: userId,
+			},
+		});
+
+		if (friends) {
+			const friendIds = friends.map((friend) => friend.friendId);
+
+			const friendPosts = await db.Post.findAll({
+				where: {
+					creatorUserId: friendIds,
+					createdAt: {
+						[Op.lt]: date,
+					},
+				},
+				include: {
+					model: db.User,
+					attributes: ["name", "surname"],
+				},
+				order: [["createdAt", "DESC"]],
+				limit: numberOfPosts,
+			});
+
+			suggestedPosts = suggestedPosts.concat(friendPosts);
+
+			const friendLikedPosts = await db.Post.findAll({
+				include: [{
+					model: db.Like,
+					where: {
+						userId: friendIds,
+					},
+					required: true,
+					attributes: [],
+				}, {
+					model: db.User,
+					attributes: ["name", "surname"],
+				}],
+				where: {
+					createdAt: {
+						[Op.lt]: date,
+				}},
+				order: [["createdAt", "DESC"]],
+				limit: numberOfPosts,
+			});
+
+			suggestedPosts = suggestedPosts.concat(friendLikedPosts);
+
+			const friendCommentedPosts = await db.Post.findAll({
+				include: [{
+					model: db.Comment,
+					where: {
+						userId: friendIds,
+					},
+					required: true,
+					attributes: [],
+				}, {
+					model: db.User,
+					attributes: ["name", "surname"],
+				}],
+				where: {
+					createdAt: {
+						[Op.lt]: date,
+				}},
+				order: [["createdAt", "DESC"]],
+				limit: numberOfPosts,
+			});
+
+			suggestedPosts = suggestedPosts.concat(friendCommentedPosts);
+		}
+
+		suggestedPosts.sort((a, b) => b.createdAt - a.createdAt);
+		suggestedPosts = suggestedPosts.slice(0, numberOfPosts);
+
+		res.status(200).json(suggestedPosts);
+
+	} catch (error) {
+		console.error("Error getting suggested posts:", error);
+		res.status(500).json({ error: error.message });
+	}
+};
+
+
 exports.updatePost = async (req, res) => {
 	try {
 		const post = await db.Post.findByPk(req.params.id);

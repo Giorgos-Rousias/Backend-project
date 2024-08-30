@@ -2,8 +2,11 @@
 const { UniqueConstraintError, ValidationError } = require("sequelize");
 const db = require("../models");
 
+exports.getUserProfile = async (req, res) => {};
 
-//? creates a new user
+//! From here on down, the code is for testing purposes ONLY
+
+//! creates a new user
 exports.createUser = async (req, res) => {
   try {
     const { name, surname, email, password, phoneNumber, isAdmin } = req.body; // Get the user data from the request body
@@ -40,7 +43,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
-//? returns all users
+//! returns all users
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await db.User.findAll();
@@ -51,9 +54,7 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-//! From here on down, the code is for testing purposes ONLY
-
-//? returns all users without the photo attribute
+//! returns all users without the photo attribute
 exports.getUsersWithoutPhoto = async (req, res) => {
   try {
     const users = await db.User.findAll({

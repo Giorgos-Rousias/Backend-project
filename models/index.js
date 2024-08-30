@@ -1,4 +1,6 @@
 const sequelize = require("../sequelize");
+const bcrypt = require("bcrypt");
+
 const User = require("./user"); // Import the user model
 const Experience = require("./userInfoModels/experience"); // Import the experience model
 const Skill = require("./userInfoModels/skill"); // Import the skill model
@@ -28,31 +30,54 @@ Like.belongsTo(Post, { foreignKey: "postId" });
 
 // Inside your User model file (models/user.js)
 User.belongsToMany(User, {
-  as: 'Friends',
-  through: 'UserFriends', // Junction table
-  foreignKey: 'userId',
-  otherKey: 'friendId',
+	as: 'Friends',
+	through: 'UserFriends', // Junction table
+	foreignKey: 'userId',
+	otherKey: 'friendId',
 });
 
 Post.associate = (models) => {
-  Post.belongsTo(models.User, {
-    foreignKey: 'creatorUserId',
-    as: 'creator', // Alias for the associated user
-    onDelete: 'CASCADE',
-  });
+	Post.belongsTo(models.User, {
+		foreignKey: 'creatorUserId',
+		as: 'creator', // Alias for the associated user
+		onDelete: 'CASCADE',
+	});
 }
 
+(async () => {
+    const admin = await User.findOne({
+        where: {
+            email: 'admin@admin.com',
+        }
+    });
+
+    if (!admin) {
+        const hashedPassword = await bcrypt.hash("admin", 10); // Use await to resolve the promise
+        
+        await User.create({
+            name: 'Admin',
+            surname: ' ',
+            email: 'admin@admin.com',
+            password: hashedPassword, // Ensure this is the resolved string
+            isAdmin: true,
+            phoneNumber: '1234567890',
+            photo: null,
+            hasPhoto: false,
+        });
+    }
+})();
+
 const db = {
-    sequelize,
-    User,
-    Experience,
-    Skill,
-    Education,
-    UserFriends,
-    Post,
-    Comment,
-    Like,
-    // Add other models here if needed
+	sequelize,
+	User,
+	Experience,
+	Skill,
+	Education,
+	UserFriends,
+	Post,
+	Comment,
+	Like,
+	// Add other models here if needed
 };
 
 module.exports = db;

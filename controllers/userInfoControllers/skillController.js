@@ -11,10 +11,10 @@ exports.create = async (req, res) => {
 
         // Create new skill for the user
         const newSkill = await db.Skill.create({
-          skill,
-          description,
-          userId, // Associate the skill with the correct user
-          isPrivate,
+            skill,
+            description,
+            userId, // Associate the skill with the correct user
+            isPrivate,
         });
 
         res.status(201).json(newSkill);

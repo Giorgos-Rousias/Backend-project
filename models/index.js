@@ -9,6 +9,8 @@ const UserFriends = require("./userFriends"); // Import the userFriends model
 const Post = require("./postsModels/post"); // Import the post model
 const Comment = require("./postsModels/comment"); // Import the comment model
 const Like = require("./postsModels/like"); // Import the like model
+const Chat = require("./chatModels/chat"); // Import the chat model
+const Message = require("./chatModels/message"); // Import the chat model
 
 User.hasMany(Education, { foreignKey: "userId" });
 Education.belongsTo(User, { foreignKey: "userId" });
@@ -27,6 +29,9 @@ Comment.belongsTo(Post, { foreignKey: "postId" });
 
 Post.hasMany(Like, { foreignKey: "postId" });
 Like.belongsTo(Post, { foreignKey: "postId" });
+
+Chat.hasMany(Message, { foreignKey: "chatId" });
+Message.belongsTo(Chat, { foreignKey: "chatId" });
 
 // Inside your User model file (models/user.js)
 User.belongsToMany(User, {
@@ -77,6 +82,8 @@ const db = {
 	Post,
 	Comment,
 	Like,
+	Chat,
+	Message,
 	// Add other models here if needed
 };
 

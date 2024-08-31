@@ -1,10 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../sequelize");
 
-const Education = require("./userInfoModels/education");
-const Experience = require("./userInfoModels/experience");
-const Skill = require("./userInfoModels/skill");
-
 const User = sequelize.define(
   "User",
   {

@@ -1,6 +1,8 @@
 // controllers/userController.js
 const { UniqueConstraintError, ValidationError } = require("sequelize");
 const db = require("../models");
+const bcrypt = require("bcrypt");
+
 
 exports.getUserProfile = async (req, res) => {
 	try {
@@ -40,8 +42,63 @@ exports.getUserProfile = async (req, res) => {
 	}
 };
 
-//! From here on down, the code is for testing purposes ONLY
+exports.changePassword = async (req, res) => {
+	try {
+		const user = await db.User.findByPk(req.user.id);
 
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		const { oldPassword, newPassword } = req.body;
+		if (!oldPassword || !newPassword) {
+			return res.status(400).json({ message: "Old password and new password are required" });
+		}
+
+		const isMatch = await bcrypt.compare(oldPassword, user.password);
+		if (!isMatch) {
+			return res.status(401).json({ message: "Invalid password" });
+		}
+
+		const hashedPassword = await bcrypt.hash(newPassword, 10);
+		await user.update({ password: hashedPassword });
+
+		res.status(200).json({ message: "Password changed successfully" });
+	} catch (error) {
+		console.error("Error changing password:", error);
+		res.status(500).json({ error: error.message });
+	}
+};
+
+exports.changeEmail = async (req, res) => {
+	try {
+		const user = await db.User.findByPk(req.user.id);
+		if(!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		const { email, password } = req.body;
+		if (!email || !password) {
+			return res.status(400).json({ message: "Email and password are required" });
+		}
+
+		const isMatch = await bcrypt.compare(password, user.password);
+		if (!isMatch) {
+			return res.status(401).json({ message: "Invalid password" });
+		}
+
+		await user.update({ email });
+
+		res.status(200).json({ message: "Email changed successfully" });
+	}
+	catch (error) {
+		console.error("Error changing email:", error);
+		res.status(500).json({ error: error.message });
+	}
+}
+
+
+//! From here on down, the code is for testing purposes ONLY
 //! creates a new user
 exports.createUser = async (req, res) => {
 	try {

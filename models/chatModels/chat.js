@@ -12,6 +12,10 @@ const Chat = sequelize.define(
             type: DataTypes.INTEGER,
             allowNull: false,
         },
+        lastMessage: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        }
     }, {
         timestamps: true,
         indexes: [

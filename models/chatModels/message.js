@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../sequelize");
+const Chat = require("./chat");
 
 const Message = sequelize.define(
     "Message",
@@ -8,7 +9,7 @@ const Message = sequelize.define(
             type: DataTypes.INTEGER,
             allowNull: false,
         },
-        senderId: {
+        userId: {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
@@ -20,5 +21,21 @@ const Message = sequelize.define(
         timestamps: true
     }
 );
+
+Message.afterCreate(async (message, options) => {
+    try {
+        const chat = await Chat.findByPk(message.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        await chat.update({
+            lastMessage: message.content,
+        });
+    } catch(error) {
+        console.error("Error creating message:", error);
+    }
+});
 
 module.exports = Message;

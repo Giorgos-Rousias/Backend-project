@@ -6,15 +6,16 @@ const friendlistController = require("../controllers/friendlistController");
 // Middleware
 const authenticateToken = require("../middlewares/authMiddleware");
 
-router.post("/sendRequest", authenticateToken, friendlistController.sendFriendRequest);
-router.get("/getPendingRequests", authenticateToken, friendlistController.getPendingRequests);
-router.post("/respondToRequest", authenticateToken, friendlistController.respondToFriendRequest);
+// Routes 
+router.get("/", authenticateToken, friendlistController.getFriends); // get user's friends
+router.delete("/", authenticateToken, friendlistController.removeFriend); // remove a friend
 
-router.delete("/removeFriend", authenticateToken, friendlistController.removeFriend);
-router.get("/getFriends", authenticateToken, friendlistController.getFriends);
-router.get("/getSentRequests",authenticateToken, friendlistController.getPendingRequestsSend
-);
+router.post("/request", authenticateToken, friendlistController.sendFriendRequest); // send a friend request
+router.get("/request", authenticateToken, friendlistController.getPendingRequests); // get user's pending requests
+router.get("/request/send",authenticateToken, friendlistController.getPendingRequestsSend); // get user's sent requests
+router.post("/request/response", authenticateToken, friendlistController.respondToFriendRequest); // respond to a friend request
 
-router.get("/getAll", friendlistController.getAllFriends);
+// For testing purposes
+router.get("/friends/all", friendlistController.getAllFriends); // get all friends regardless of user
 
 module.exports = router;

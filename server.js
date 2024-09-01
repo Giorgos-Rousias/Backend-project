@@ -18,7 +18,7 @@ app.use(express.json()); // Middleware to parse JSON bodies
 app.use("/users", userRoutes);
 app.use("/auth", authRoutes); // Mount authentication routes
 app.use("/userInfo", userInfoRoutes);
-app.use("/friendlist", friendlistRoutes);
+app.use("/friends", friendlistRoutes);
 app.use("/post", postRoutes);
 app.use("/chat", chatRoutes);
 

@@ -1,6 +1,7 @@
 const db = require("../models");
 const determineFileCategory = require("../middlewares/determineFileTypeMiddleware");
 const { Op, fn, col } = require("sequelize");
+const createNotification = require("./notificationController").createNotification;
 
 exports.createPost = async (req, res) => {
 	try {
@@ -30,7 +31,6 @@ exports.createPost = async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 };
-
 
 // exports.getFriendsPosts = async (req, res) => {
 // 	try {
@@ -179,7 +179,6 @@ exports.getUserSuggestedPosts = async (req, res) => {
 	}
 };
 
-
 exports.updatePost = async (req, res) => {
 	try {
 		const post = await db.Post.findByPk(req.params.id);
@@ -239,6 +238,11 @@ exports.deletePost = async (req, res) => {
 
 exports.likePost = async (req, res) => {
 	try {
+		const user = db.User.findByPk(req.user.id);
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
 		const post = await db.Post.findByPk(req.params.id);
 		if (!post) {
 			return res.status(404).json({ error: "Post not found" });
@@ -259,6 +263,9 @@ exports.likePost = async (req, res) => {
 			userId: req.user.id,
 			postId: post.id,
 		});
+		
+		// Create a notification for the post creator
+		await createNotification(req.user.id, "like", post.id, "User: " + req.user.name + " " + req.user.surname + " liked your post");
 
 		res.status(200).json({ message: "Post liked successfully" });
 	} catch (error) {
@@ -296,6 +303,14 @@ exports.removeLike = async (req, res) => {
 
 exports.createComment = async (req, res) => {
 	try {
+		const user = db.User.findByPk(req.user.id);
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		if (!req.body.text) {
+			return res.status(400).json({ error: "You must provide text to create a comment" });
+		}
 		const { text } = req.body;
 
 		const post = await db.Post.findByPk(req.params.id);
@@ -303,12 +318,14 @@ exports.createComment = async (req, res) => {
 			return res.status(404).json({ error: "Post not found" });
 		}
 
-
 		const comment = await db.Comment.create({
 			userId: req.user.id,
 			postId: post.id,
 			text,
 		});
+
+		// Create a notification for the post creator
+		await createNotification(req.user.id, "comment", post.id, "User: " + req.user.name + " " + req.user.surname + " commented on your post");
 
 		res.status(201).json(comment);
 	} catch (error) {

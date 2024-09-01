@@ -1,4 +1,5 @@
 const db = require("../models");
+const createNotification = require("./notificationController").createNotification;
 
 exports.sendFriendRequest = async (req, res) => {
   try {
@@ -33,7 +34,12 @@ exports.sendFriendRequest = async (req, res) => {
     }
 
     // Create a new friend request with status 'pending'
-    await db.UserFriends.create({ userId, friendId});
+    const request = await db.UserFriends.create({ userId, friendId});
+
+    // Create a notification for the friend
+    await createNotification(friendId, "friendRequest",request.id , {
+      message: `${user.name} ${user.surname} sent you a friend request`,
+    });
 
     res.status(200).json({ message: "Friend request sent" });
   } catch (error) {
@@ -42,6 +48,7 @@ exports.sendFriendRequest = async (req, res) => {
   }
 };
 
+// !Need to reword, should work with friendRequestId instead of friendId
 exports.respondToFriendRequest = async (req, res) => {
   try {
     const userId = req.user.id; // The logged-in user (recipient of the request)

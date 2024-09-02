@@ -1,6 +1,6 @@
 const db = require('../models');
 
-const createNotification = async (userId, type, sourceId, content) => {
+exports.createNotification = async (userId, type, sourceId, content) => {
     try {
         const user = await db.User.findByPk(userId);
         if (!user) {
@@ -18,7 +18,7 @@ const createNotification = async (userId, type, sourceId, content) => {
     }
 };
 
-const getNotifications = async (req, res) => {
+exports.getNotifications = async (req, res) => {
     try {
         const user = await db.User.findOne({
             where: {
@@ -44,7 +44,7 @@ const getNotifications = async (req, res) => {
     }
 };
 
-const markAsRead = async (req, res) => {
+exports.markAsRead = async (req, res) => {
     try {
         const notification = await db.Notification.findOne({
             where: {
@@ -68,7 +68,7 @@ const markAsRead = async (req, res) => {
     }
 };
 
-const deleteNotification = async (req, res) => {
+exports.deleteNotification = async (req, res) => {
     try {
         const notification = await db.Notification.findOne({
             where: {

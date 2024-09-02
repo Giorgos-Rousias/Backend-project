@@ -3,6 +3,7 @@ const { UniqueConstraintError, ValidationError } = require("sequelize");
 const db = require("../models");
 const bcrypt = require("bcrypt");
 const js2xmlparser = require('js2xmlparser');
+const { Op } = require("sequelize");
 
 exports.getUserProfile = async (req, res) => {
 	try {
@@ -62,7 +63,6 @@ exports.getAllUsers = async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 };
-
 
 const usersInfo = async (usersId) => {
 	const users = await db.User.findAll({
@@ -194,6 +194,38 @@ exports.changeEmail = async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 }
+
+exports.search = async (req , res) => {
+	try {
+		const input = req.body.input;
+		const limit = req.body.limit ? req.body.limit : 10;
+
+		if (!input || input.trim() === "") {
+			return res.status(400).json({ message: "Search input cannot be empty" });
+		}
+
+		const users = await db.User.findAll({
+		where: {
+			[Op.or]: [{
+				name: {
+				[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
+				}
+			}, {
+				surname: {
+				[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
+				}
+			}]
+		},
+		limit: limit,
+		attributes: ["id", "name", "surname", "email"] // You can choose which attributes to return
+		});
+		res.status(200).json(users);
+	}
+	catch (error) {
+		console.error("Error searching users:", error);
+		res.status(500).json({ error: error.message });
+	}
+} 
 
 //! From here on down, the code is for testing purposes ONLY
 //! creates a new user

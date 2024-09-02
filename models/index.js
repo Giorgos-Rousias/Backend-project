@@ -23,6 +23,12 @@ Experience.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(Skill, { foreignKey: "userId" });
 Skill.belongsTo(User, { foreignKey: "userId" });
 
+User.hasMany(Like, { foreignKey: "userId" });
+Like.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(Comment, { foreignKey: "userId" });
+Comment.belongsTo(User, { foreignKey: "userId" });
+
 User.hasMany(Post, { foreignKey: "creatorUserId" });
 Post.belongsTo(User, { foreignKey: "creatorUserId" });
 

@@ -75,31 +75,17 @@ const usersInfo = async (usersId) => {
 					model: db.Education,
 				}, {
 					model: db.Post,
+				}, {
+					model: db.Comment
+				}, {
+					model: db.Like
+				}, {
+					model: db.Listing
+				},{
+					model: db.User,
+					as: 'Friends',
+					attributes: { exclude: ["password", "email", "phoneNumber", "createdAt", "updatedAt", "isAdmin", "photo", "hasPhoto"]},
 				}]
-		});
-
-		const comments = await db.Comment.findAll({
-			where: { userId: usersId },
-		});
-
-		users.map(user => {
-			user.dataValues.Comments = comments.filter(comment => comment.userId === user.id);
-		});
-
-		const likes = await db.Like.findAll({
-			where: { userId: usersId },
-		});
-
-		users.map(user => {
-			user.dataValues.Likes = likes.filter(like => like.userId === user.id);
-		});
-
-		const friends = await db.UserFriends.findAll({
-			where: { userId: usersId },
-		});
-
-		users.map(user => {
-			user.dataValues.Friends = friends.filter(friend => friend.userId === user.id);
 		});
 
 		return users;

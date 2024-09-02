@@ -11,6 +11,7 @@ const friendlistRoutes = require("./routes/friendlistRoutes");
 const postRoutes = require("./routes/postRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const listingRoutes = require("./routes/listingRoutes");
 
 // Middleware
 app.use(express.json()); // Middleware to parse JSON bodies
@@ -23,6 +24,7 @@ app.use("/friends", friendlistRoutes);
 app.use("/post", postRoutes);
 app.use("/chat", chatRoutes);
 app.use("/notifications", notificationRoutes);
+app.use("/listings", listingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

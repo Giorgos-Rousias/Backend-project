@@ -12,6 +12,7 @@ const Like = require("./postsModels/like"); // Import the like model
 const Chat = require("./chatModels/chat"); // Import the chat model
 const Message = require("./chatModels/message"); // Import the chat model
 const Notification = require("./notification"); // Import the notification model
+const Listing = require("./listing"); // Import the listing model
 
 User.hasMany(Education, { foreignKey: "userId" });
 Education.belongsTo(User, { foreignKey: "userId" });
@@ -36,6 +37,9 @@ Message.belongsTo(Chat, { foreignKey: "chatId" });
 
 Notification.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(Notification, { foreignKey: "userId" });
+
+Listing.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Listing, { foreignKey: "userId" });
 
 // Inside your User model file (models/user.js)
 User.belongsToMany(User, {
@@ -88,7 +92,8 @@ const db = {
 	Like,
 	Chat,
 	Message,
-	Notification
+	Notification,
+	Listing,
 };
 
 module.exports = db;

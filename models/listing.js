@@ -1,6 +1,6 @@
 const sequelize = require("../sequelize");
 
-const Listing = sequelize.define("listing", {
+const Listing = sequelize.define("Listing", {
     title: {
         type: sequelize.Sequelize.STRING,
         allowNull: false,

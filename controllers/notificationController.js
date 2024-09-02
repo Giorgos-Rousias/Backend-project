@@ -34,6 +34,9 @@ exports.getNotifications = async (req, res) => {
             where: {
                 userId: req.user.id,
             },
+            attributes: {
+                exclude : ["userId"],
+            },
             order: [['createdAt', 'DESC']],
         });
 

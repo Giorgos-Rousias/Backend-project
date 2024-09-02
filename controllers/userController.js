@@ -2,14 +2,19 @@
 const { UniqueConstraintError, ValidationError } = require("sequelize");
 const db = require("../models");
 const bcrypt = require("bcrypt");
-
+const js2xmlparser = require('js2xmlparser');
 
 exports.getUserProfile = async (req, res) => {
 	try {
+		const isAdmin = req.user.isAdmin;
+		let excludeFields = []
+		if(!isAdmin) {
+			excludeFields = ["id", "email", "password", "isAdmin", "createdAt", "updatedAt"];
+		}
+
 		const user = await db.User.findByPk(req.params.id, {
-			attributes: { exclude: ["id", "email", "password", "isAdmin", "createdAt", "updatedAt"] }, // Exclude the password from the user data
+			attributes: { exclude: excludeFields },
 		});
-		
 		if (!user) {
 			return res.status(404).json({ message: "User not found" });
 		}
@@ -38,6 +43,113 @@ exports.getUserProfile = async (req, res) => {
 		});
 	} catch (error) {
 		console.error("Error fetching user profile:", error);
+		res.status(500).json({ error: error.message });
+	}
+};
+
+exports.getAllUsers = async (req, res) => {
+	try {
+		if (!req.user.isAdmin) {
+			return res.status(403).json({ message: "Unauthorized" });
+		}
+
+		const users = await db.User.findAll({
+			attributes: { exclude: ["password", "email", "phoneNumber", "createdAt", "updatedAt"] },
+		});
+		res.status(200).json(users);
+	} catch (error) {
+		console.error("Error fetching users:", error);
+		res.status(500).json({ error: error.message });
+	}
+};
+
+
+const usersInfo = async (usersId) => {
+	const users = await db.User.findAll({
+			where: { id: usersId },
+			include: [ {
+					model: db.Skill,
+				}, {
+					model: db.Experience,
+				}, {
+					model: db.Education,
+				}, {
+					model: db.Post,
+				}]
+		});
+
+		const comments = await db.Comment.findAll({
+			where: { userId: usersId },
+		});
+
+		users.map(user => {
+			user.dataValues.Comments = comments.filter(comment => comment.userId === user.id);
+		});
+
+		const likes = await db.Like.findAll({
+			where: { userId: usersId },
+		});
+
+		users.map(user => {
+			user.dataValues.Likes = likes.filter(like => like.userId === user.id);
+		});
+
+		const friends = await db.UserFriends.findAll({
+			where: { userId: usersId },
+		});
+
+		users.map(user => {
+			user.dataValues.Friends = friends.filter(friend => friend.userId === user.id);
+		});
+
+		return users;
+}
+
+exports.exportUsersJSON = async (req, res) => {
+	try {
+		if(!req.user) {
+			return res.status(401).json({ message: "Unauthorized" });
+		}
+
+		if (!req.user.isAdmin) {
+			return res.status(403).json({ message: "Unauthorized" });
+		}
+
+		const usersId = req.body.usersId;
+		if (!usersId) {
+			return res.status(400).json({ message: "Users ID are required" });
+		}
+
+		res.send(await usersInfo(usersId));
+	} catch (error) {
+		console.error("Error fetching users:", error);
+		res.status(500).json({ error: error.message });
+	}
+};
+
+exports.exportUsersXML = async (req, res) => {
+	try {
+		if(!req.user) {
+			return res.status(401).json({ message: "Unauthorized" });
+		}
+
+		if (!req.user.isAdmin) {
+			return res.status(403).json({ message: "Unauthorized" });
+		}
+
+		const usersId = req.body.usersId;
+		if (!usersId) {
+			return res.status(400).json({ message: "Users ID are required" });
+		}
+
+		const users = await usersInfo(usersId);
+
+		const xmlData = js2xmlparser.parse("users", users.map(user => user.toJSON()));
+
+		res.header('Content-Type', 'application/xml');
+		res.send(xmlData);
+	} catch (error) {
+		console.error("Error fetching users:", error);
 		res.status(500).json({ error: error.message });
 	}
 };
@@ -97,7 +209,6 @@ exports.changeEmail = async (req, res) => {
 	}
 }
 
-
 //! From here on down, the code is for testing purposes ONLY
 //! creates a new user
 exports.createUser = async (req, res) => {
@@ -133,17 +244,6 @@ exports.createUser = async (req, res) => {
 		res
 		.status(500)
 		.json({ message: "Error creating user", error: error.message });
-	}
-};
-
-//! returns all users
-exports.getAllUsers = async (req, res) => {
-	try {
-		const users = await db.User.findAll();
-		res.status(200).json(users);
-	} catch (error) {
-		console.error("Error fetching users:", error);
-		res.status(500).json({ error: error.message });
 	}
 };
 

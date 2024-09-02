@@ -18,7 +18,7 @@ const Listing = sequelize.define("Listing", {
         allowNull: false,
     },
     salary: {
-        type: sequelize.Sequelize.DECIMAL,
+        type: sequelize.Sequelize.STRING,
         allowNull: false,
     },
     userId: {

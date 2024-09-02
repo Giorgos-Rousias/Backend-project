@@ -4,6 +4,11 @@ const User = require("./user");
 
 // Define the UserFriends junction table
 const UserFriends = sequelize.define("UserFriends", {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
   userId: {
     type: DataTypes.INTEGER,
     references: {

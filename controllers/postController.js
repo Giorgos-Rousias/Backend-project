@@ -6,7 +6,8 @@ const createNotification = require("./notificationController").createNotificatio
 exports.createPost = async (req, res) => {
 	try {
 		const { text } = req.body;
-		const creatorUserId = req.user.id; // Assuming you're using authentication and have req.user
+		const creatorUserId = req.user.id;
+
 		const file = req.file ? req.file.buffer : null; // Get the photo buffer if it exists
 
 		if (!text && !file) {
@@ -25,7 +26,7 @@ exports.createPost = async (req, res) => {
 		}
 		await db.Post.create(postBody);
 
-		res.status(200).json("Post created successfully");
+		res.status(200).json({message: "Post created successfully"});
 	} catch (error) {
 		console.error("Error creating post:", error);
 		res.status(500).json({ error: error.message });
@@ -238,7 +239,7 @@ exports.deletePost = async (req, res) => {
 
 exports.likePost = async (req, res) => {
 	try {
-		const user = db.User.findByPk(req.user.id);
+		const user = await db.User.findByPk(req.user.id);
 		if (!user) {
 			return res.status(404).json({ error: "User not found" });
 		}
@@ -265,7 +266,12 @@ exports.likePost = async (req, res) => {
 		});
 		
 		// Create a notification for the post creator
-		await createNotification(req.user.id, "like", post.id, "User: " + req.user.name + " " + req.user.surname + " liked your post");
+		await createNotification(
+			post.creatorUserId,
+			"like",
+			post.id,
+			`${user.name} ${user.surname} liked your post`,
+		);
 
 		res.status(200).json({ message: "Post liked successfully" });
 	} catch (error) {
@@ -303,10 +309,12 @@ exports.removeLike = async (req, res) => {
 
 exports.createComment = async (req, res) => {
 	try {
-		const user = db.User.findByPk(req.user.id);
+		const user = await db.User.findByPk(req.user.id);
 		if (!user) {
 			return res.status(404).json({ error: "User not found" });
 		}
+
+		console.log(user);
 
 		if (!req.body.text) {
 			return res.status(400).json({ error: "You must provide text to create a comment" });
@@ -325,7 +333,12 @@ exports.createComment = async (req, res) => {
 		});
 
 		// Create a notification for the post creator
-		await createNotification(req.user.id, "comment", post.id, "User: " + req.user.name + " " + req.user.surname + " commented on your post");
+		await createNotification(
+			post.creatorUserId,
+			"comment",
+			post.id,
+			`${user.name} ${user.surname} commented on your post`,
+		);
 
 		res.status(201).json(comment);
 	} catch (error) {

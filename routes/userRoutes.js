@@ -15,6 +15,4 @@ router.put("/change-password", authenticateToken, userController.changePassword)
 router.put("/change-email", authenticateToken, userController.changeEmail);
 router.get("/:id/profile", authenticateToken, userController.getUserProfile);
 
-
-
 module.exports = router;

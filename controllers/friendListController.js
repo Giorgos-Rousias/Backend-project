@@ -30,16 +30,20 @@ exports.sendFriendRequest = async (req, res) => {
     });
 
     if (existingFriendship) {
-      return res.status(400).json({ message: "Friend request already sent" });
+      existingFriendship.destroy();
+      // return res.status(400).json({ message: "Friend request already sent" });
     }
 
     // Create a new friend request with status 'pending'
     const request = await db.UserFriends.create({ userId, friendId});
 
     // Create a notification for the friend
-    await createNotification(friendId, "friendRequest",request.id , {
-      message: `${user.name} ${user.surname} sent you a friend request`,
-    });
+    await createNotification(
+      friendId,
+      "friendRequest",
+      request.id,
+      `${user.name} ${user.surname} sent you a friend request`,
+    );
 
     res.status(200).json({ message: "Friend request sent" });
   } catch (error) {

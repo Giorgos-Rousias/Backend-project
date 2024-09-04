@@ -116,7 +116,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 				},
 				include: {
 					model: db.User,
-					attributes: ["name", "surname"],
+					attributes: ["firstName", "lastName"],
 				},
 				order: [["createdAt", "DESC"]],
 				limit: numberOfPosts,
@@ -134,7 +134,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 					attributes: [],
 				}, {
 					model: db.User,
-					attributes: ["name", "surname"],
+					attributes: ["firstName", "lastName"],
 				}],
 				where: {
 					createdAt: {
@@ -156,7 +156,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 					attributes: [],
 				}, {
 					model: db.User,
-					attributes: ["name", "surname"],
+					attributes: ["firstName", "lastName"],
 				}],
 				where: {
 					createdAt: {
@@ -270,7 +270,7 @@ exports.likePost = async (req, res) => {
 			post.creatorUserId,
 			"like",
 			post.id,
-			`${user.name} ${user.surname} liked your post`,
+			`${user.firstName} ${user.lastName} liked your post`,
 		);
 
 		res.status(200).json({ message: "Post liked successfully" });
@@ -337,7 +337,7 @@ exports.createComment = async (req, res) => {
 			post.creatorUserId,
 			"comment",
 			post.id,
-			`${user.name} ${user.surname} commented on your post`,
+			`${user.firstName} ${user.lastName} commented on your post`,
 		);
 
 		res.status(201).json(comment);

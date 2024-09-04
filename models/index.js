@@ -63,29 +63,6 @@ Post.associate = (models) => {
 	});
 }
 
-(async () => {
-    const admin = await User.findOne({
-        where: {
-            email: 'admin@admin.com',
-        }
-    });
-
-    if (!admin) {
-        const hashedPassword = await bcrypt.hash("admin", 10); // Use await to resolve the promise
-        
-        await User.create({
-            name: 'Admin',
-            surname: ' ',
-            email: 'admin@admin.com',
-            password: hashedPassword, // Ensure this is the resolved string
-            isAdmin: true,
-            phoneNumber: '1234567890',
-            photo: null,
-            hasPhoto: false,
-        });
-    }
-})();
-
 const db = {
 	sequelize,
 	User,
@@ -101,5 +78,28 @@ const db = {
 	Notification,
 	Listing,
 };
+
+(async () => {
+    const admin = await User.findOne({
+        where: {
+            email: 'admin@admin.com',
+        }
+    });
+
+    if (!admin) {
+        const hashedPassword = await bcrypt.hash("admin", 10); // Use await to resolve the promise
+        
+        await User.create({
+            firstName: 'Admin',
+            lastName: ' ',
+            email: 'admin@admin.com',
+            password: hashedPassword, // Ensure this is the resolved string
+            isAdmin: true,
+            phoneNumber: '1234567890',
+            photo: null,
+            hasPhoto: false,
+        });
+    }
+})();
 
 module.exports = db;

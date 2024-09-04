@@ -207,17 +207,17 @@ exports.search = async (req , res) => {
 		const users = await db.User.findAll({
 		where: {
 			[Op.or]: [{
-				name: {
+				firstName: {
 				[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
 				}
 			}, {
-				surname: {
+				lastName: {
 				[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
 				}
 			}]
 		},
 		limit: limit,
-		attributes: ["id", "name", "surname", "email"] // You can choose which attributes to return
+		attributes: ["id", "firstName", "lastName", "email"] // You can choose which attributes to return
 		});
 		res.status(200).json(users);
 	}
@@ -231,14 +231,14 @@ exports.search = async (req , res) => {
 //! creates a new user
 exports.createUser = async (req, res) => {
 	try {
-		const { name, surname, email, password, phoneNumber, isAdmin } = req.body; // Get the user data from the request body
+		const { firstName, lastName, email, password, phoneNumber, isAdmin } = req.body; // Get the user data from the request body
 		const photoBuffer = req.file ? req.file.buffer : null; // Get the photo buffer if it exists
 		const hasPhoto = !!photoBuffer; // Check if the user has a photo
 
 		// Create the new user
 		const user = await db.User.create({
-		name,
-		surname,
+		firstName,
+		lastName,
 		email,
 		password,
 		phoneNumber,

@@ -42,7 +42,7 @@ exports.sendFriendRequest = async (req, res) => {
       friendId,
       "friendRequest",
       request.id,
-      `${user.name} ${user.surname} sent you a friend request`,
+      `${user.firstName} ${user.lastName} sent you a friend request`,
     );
 
     res.status(200).json({ message: "Friend request sent" });
@@ -137,13 +137,13 @@ exports.getFriends = async (req, res) => {
 
     const friends = await db.User.findAll({
       where: { id: userId }, // Find the logged-in user
-      attributes: ["id", "name", "surname", "email"], // Specify attributes for the user
+      attributes: ["id", "firstName", "lastName", "email"], // Specify attributes for the user
       include: [
         {
           model: db.User,
           as: "Friends",
           through: { where: { status: "accepted" }, attributes: [] }, // Omit the junction table attributes
-          attributes: ["id", "name", "surname", "email"], // Specify attributes for friends
+          attributes: ["id", "firstName", "lastName", "email"], // Specify attributes for friends
         },
       ],
     });

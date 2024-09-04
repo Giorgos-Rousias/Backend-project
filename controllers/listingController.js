@@ -75,7 +75,7 @@ exports.getListings = async (req, res) => {
             include: [
                 {
                     model: db.User,
-                    attributes: ["id", "name", "surname"],
+                    attributes: ["id", "firstName", "lastName"],
                 },
             ],
             order: [["createdAt", "DESC"]],

@@ -7,7 +7,7 @@ const db = require("../models");
 // Register a new user
 exports.register = async (req, res) => {
   try {
-    const { name, surname, email, password, phoneNumber, isAdmin } = req.body;
+    const { firstName, lastName, email, password, phoneNumber, isAdmin } = req.body;
     const photoBuffer = req.file ? req.file.buffer : null;
     const hasPhoto = !!photoBuffer;
 
@@ -20,8 +20,8 @@ exports.register = async (req, res) => {
 
     // Create the new user
     const user = await db.User.create({
-      name,
-      surname,
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
       phoneNumber,

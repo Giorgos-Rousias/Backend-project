@@ -77,8 +77,15 @@ exports.login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRATION_TIME }
     );
 
-    const userInfo = { firstName: user.firstName, lastName: user.lastName, hasPhoto: user.hasPhoto, photo: user.photo };
+    const userInfo = { firstName: user.firstName, lastName: user.lastName, hasPhoto: user.hasPhoto};
     
+    // Include the photo in the userInfo if it exists
+    if (user.photo) {
+      // Convert buffer to base64 string
+      userInfo.photo = `data:image/jpeg;base64,${user.photo.toString('base64')}`;
+    }
+    console.log("userInfo", userInfo);
+
     res.status(200).json({ message: "Login successful", token, userInfo });
 
     // res.status(200).json({ message: "Login successful", token });

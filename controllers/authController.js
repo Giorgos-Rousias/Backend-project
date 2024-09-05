@@ -77,7 +77,11 @@ exports.login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRATION_TIME }
     );
 
-    res.status(200).json({ message: "Login successful", token });
+    const userInfo = { firstName: user.firstName, lastName: user.lastName, hasPhoto: user.hasPhoto, photo: user.photo };
+    
+    res.status(200).json({ message: "Login successful", token, userInfo });
+
+    // res.status(200).json({ message: "Login successful", token });
   } catch (error) {
     console.error("Error logging in:", error);
     res.status(500).json({ message: "Error logging in", error: error.message });

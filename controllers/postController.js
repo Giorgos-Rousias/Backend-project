@@ -16,13 +16,14 @@ exports.createPost = async (req, res) => {
 
 		postBody = {creatorUserId, text};
 		if (file){
-			const fileType = await determineFileCategory(req.file.originalname);
+			const fileType = await determineFileCategory(req.file);
 
-			if (fileType == null) {
+			if (fileType === null) {
 				// File type is not supported
-				res.status(400).json({ error: "Unsupported file type" });
+				return res.status(400).json({ error: "Unsupported file type" });
 			}
-			potBody = {creatorUserId, text, file, fileType};
+
+			postBody = {creatorUserId, text, file, fileType};
 		}
 		await db.Post.create(postBody);
 
@@ -32,43 +33,6 @@ exports.createPost = async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 };
-
-// exports.getFriendsPosts = async (req, res) => {
-// 	try {
-// 		const user = req.user.id; // Assuming you're using authentication and have req.user
-
-// 		const friends = await db.UserFriends.findAll({
-// 			where: {
-// 				userId: user,
-// 			},
-// 		});
-
-// 		if (!friends) {
-// 			return res.status(404).json({ error: "No friends found" });
-// 		}
-
-// 		const friendIds = friends.map((friend) => friend.friendId);
-
-// 		const posts = await db.Post.findAll({
-// 			where: {
-// 				creatorUserId: friendIds,
-// 			},
-// 			include: {
-// 				model: db.User,
-// 				attributes: ["username"],
-// 			},
-// 		});
-
-// 		if (!posts) {
-// 			return res.status(404).json({ error: "No posts found" });
-// 		}
-
-// 		res.status(200).json(posts);
-// 	} catch (error) {
-// 		console.error("Error getting friends' posts:", error);
-// 		res.status(500).json({ error: error.message });
-// 	}
-// };
 
 exports.getUserSuggestedPosts = async (req, res) => {
 	try {
@@ -94,6 +58,10 @@ exports.getUserSuggestedPosts = async (req, res) => {
 				},
 			},
 			order: [["createdAt", "DESC"]],
+			include: {
+				model: db.User,
+				attributes: ["firstName", "lastName", "photo"],
+			},
 		});
 
 		suggestedPosts = suggestedPosts.concat(userPosts);
@@ -116,7 +84,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 				},
 				include: {
 					model: db.User,
-					attributes: ["firstName", "lastName"],
+					attributes: ["firstName", "lastName" , "photo"],
 				},
 				order: [["createdAt", "DESC"]],
 				limit: numberOfPosts,
@@ -134,7 +102,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 					attributes: [],
 				}, {
 					model: db.User,
-					attributes: ["firstName", "lastName"],
+					attributes: ["firstName", "lastName" , "photo"],
 				}],
 				where: {
 					createdAt: {
@@ -156,7 +124,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 					attributes: [],
 				}, {
 					model: db.User,
-					attributes: ["firstName", "lastName"],
+					attributes: ["firstName", "lastName" , "photo"],
 				}],
 				where: {
 					createdAt: {
@@ -172,7 +140,36 @@ exports.getUserSuggestedPosts = async (req, res) => {
 		suggestedPosts.sort((a, b) => b.createdAt - a.createdAt);
 		suggestedPosts = suggestedPosts.slice(0, numberOfPosts);
 
-		res.status(200).json(suggestedPosts);
+		const returnPosts = suggestedPosts.map((post) => {
+			let returnFile = null;
+			if (post.file) {
+				if (post.fileType === "video") {
+					returnFile = `data:video/mp4;base64,${post.file.toString('base64')}`;
+				} else if (post.fileType === "audio") {
+					returnFile = `data:audio/mp3;base64,${post.file.toString('base64')}`;
+				} else {
+					returnFile = `data:image/jpeg;base64,${post.file.toString('base64')}`;
+				}
+			}
+
+			// Process the user photo the same way
+			const returnUserPhoto = post.User.photo
+				? `data:image/jpeg;base64,${post.User.photo.toString('base64')}`
+				: null;
+
+			return {
+				id: post.id,
+				text: post.text,
+				fileType: post.fileType,  // The fileType should be something like 'image', 'video', or 'audio'
+				file: returnFile,         // The base64 data URI for the media file
+				userId: post.User.id,
+				firstName: post.User.firstName,
+				lastName: post.User.lastName,
+				photo: returnUserPhoto,   // The base64 data URI for the user's profile photo
+			};
+		});
+
+		res.status(200).json(returnPosts);
 
 	} catch (error) {
 		console.error("Error getting suggested posts:", error);

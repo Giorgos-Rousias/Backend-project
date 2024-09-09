@@ -19,6 +19,12 @@ exports.getUserProfile = async (req, res) => {
 		if (!user) {
 			return res.status(404).json({ message: "User not found" });
 		}
+		const userWithTransformedPhotos = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            photo: user.photo ? `data:image/jpeg;base64,${user.photo.toString('base64')}` : null,
+        };
+		console.log(userWithTransformedPhotos);
 
 		//Get user's skill 
 		const skills = await db.Skill.findAll({
@@ -37,7 +43,7 @@ exports.getUserProfile = async (req, res) => {
 		});	
 
 		res.status(200).json({
-			user: user,
+			user: userWithTransformedPhotos,
 			skills: skills,
 			experience: experience,
 			education: education,
@@ -180,11 +186,15 @@ exports.changeEmail = async (req, res) => {
 			return res.status(400).json({ message: "Email and password are required" });
 		}
 
+		const userWithEmail = await db.User.findOne({ where: { email } });
+		if (userWithEmail) {
+			return res.status(409).json({ message: "Email already in use" });
+		}
+
 		const isMatch = await bcrypt.compare(password, user.password);
 		if (!isMatch) {
 			return res.status(401).json({ message: "Invalid password" });
 		}
-
 		await user.update({ email });
 
 		res.status(200).json({ message: "Email changed successfully" });
@@ -197,29 +207,60 @@ exports.changeEmail = async (req, res) => {
 
 exports.search = async (req , res) => {
 	try {
+		const userId = req.user.id;
 		const input = req.body.input;
 		const limit = req.body.limit ? req.body.limit : 10;
+
+		console.log(input);
 
 		if (!input || input.trim() === "") {
 			return res.status(400).json({ message: "Search input cannot be empty" });
 		}
 
 		const users = await db.User.findAll({
-		where: {
-			[Op.or]: [{
-				firstName: {
-				[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
-				}
-			}, {
-				lastName: {
-				[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
-				}
+			where: {
+				[Op.and]: [
+					{
+						id: {
+							[Op.ne]: userId // Exclude the user who made the request
+						}
+					},
+					{
+						[Op.or]: [
+							{
+								firstName: {
+									[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
+								}
+							},
+							{
+								lastName: {
+									[Op.iLike]: `%${input}%` // case-insensitive search for PostgreSQL
+								}
+							}
+						]
+					}
+				]
+			},
+			limit: limit,
+			attributes: ["id", "firstName", "lastName", "photo"], // You can choose which attributes to return
+			include : [{
+				model: db.Experience,
+				required: false,
+				where: { isPrivate: false, endYear: null },
+				limit: 1
 			}]
-		},
-		limit: limit,
-		attributes: ["id", "firstName", "lastName", "email"] // You can choose which attributes to return
 		});
-		res.status(200).json(users);
+
+		const usersWithTransformedPhotos = users.map(user => ({
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            photo: user.photo ? `data:image/jpeg;base64,${user.photo.toString('base64')}` : null,
+            role: user.Experiences.length > 0 ? user.Experiences[0].role : null,
+            company: user.Experiences.length > 0 ? user.Experiences[0].company : null
+        }));
+
+		res.status(200).json(usersWithTransformedPhotos);
 	}
 	catch (error) {
 		console.error("Error searching users:", error);

@@ -8,6 +8,11 @@ exports.createPost = async (req, res) => {
 		const { text } = req.body;
 		const creatorUserId = req.user.id;
 
+		const user = await db.User.findByPk(creatorUserId);
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
 		const file = req.file ? req.file.buffer : null; // Get the photo buffer if it exists
 
 		if (!text && !file) {
@@ -25,9 +30,30 @@ exports.createPost = async (req, res) => {
 
 			postBody = {creatorUserId, text, file, fileType};
 		}
-		await db.Post.create(postBody);
+		const post = await db.Post.create(postBody);
 
-		res.status(200).json({message: "Post created successfully"});
+		let returnFile = null;
+		if (post.file) {
+			if (post.fileType === "video") {
+				returnFile = `data:video/mp4;base64,${post.file.toString('base64')}`;
+			} else if (post.fileType === "audio") {
+				returnFile = `data:audio/mp3;base64,${post.file.toString('base64')}`;
+			} else {
+				returnFile = `data:image/jpeg;base64,${post.file.toString('base64')}`;
+			}
+		}
+	
+		const response = {
+			id: post.id,
+			text,
+			file: returnFile,
+			fileType: postBody.fileType,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			photo: user.photo ? `data:image/jpeg;base64,${user.photo.toString('base64')}` : null,
+		};
+
+		res.status(200).json(response);
 	} catch (error) {
 		console.error("Error creating post:", error);
 		res.status(500).json({ error: error.message });
@@ -337,7 +363,16 @@ exports.createComment = async (req, res) => {
 			`${user.firstName} ${user.lastName} commented on your post`,
 		);
 
-		res.status(201).json(comment);
+		const response = {
+			id: comment.id,
+			postId: comment.postId,
+			text: comment.text,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			photo: user.photo ? `data:image/jpeg;base64,${user.photo.toString('base64')}` : null,
+		};
+
+		res.status(201).json(response);
 	} catch (error) {
 		console.error("Error creating comment:", error);
 		res.status(500).json({ error: error.message });
@@ -382,10 +417,29 @@ exports.getPostsComments = async (req, res) => {
 		const comments = await db.Comment.findAll({
 			where: {
 				postId: post.id,
-			}
+			},
+			include: {
+				model: db.User,
+				attributes: ["firstName", "lastName", "photo"],
+			},
 		});
 
-		res.status(200).json(comments);
+		const commentsWithBase64Photo = comments.map(comment => {
+			if (comment.User && comment.User.photo) {
+				// Check if photo is a buffer
+				const photoBase64 = `data:image/jpeg;base64,${comment.User.photo.toString('base64')}`;
+				return {
+					...comment.toJSON(), // Convert Sequelize instance to a plain object
+					User: {
+						...comment.User.toJSON(), // Convert User instance to a plain object
+						photo: photoBase64, // Add the base64 encoded photo
+					},
+				};
+			}
+			return comment; // Return as-is if there's no photo
+		});
+
+		res.status(200).json(commentsWithBase64Photo);
 	} catch (error) {
 		console.error("Error getting post comments:", error);
 		res.status(500).json({ error: error.message });

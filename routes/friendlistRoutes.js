@@ -10,6 +10,7 @@ const authenticateToken = require("../middlewares/authMiddleware");
 router.get("/", authenticateToken, friendlistController.getFriends); // get user's friends
 router.delete("/", authenticateToken, friendlistController.removeFriend); // remove a friend
 
+router.get("/:id/friend-check", authenticateToken, friendlistController.checkFriends); // check if two users are friends
 router.post("/request", authenticateToken, friendlistController.sendFriendRequest); // send a friend request
 router.get("/request", authenticateToken, friendlistController.getPendingRequests); // get user's pending requests
 router.get("/request/send",authenticateToken, friendlistController.getPendingRequestsSend); // get user's sent requests

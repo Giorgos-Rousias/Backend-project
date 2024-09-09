@@ -1,5 +1,6 @@
 const db = require("../models");
 const createNotification = require("./notificationController").createNotification;
+const { Op } = require("sequelize");
 
 exports.sendFriendRequest = async (req, res) => {
   try {
@@ -115,14 +116,36 @@ exports.removeFriend = async (req, res) => {
     const friendId = req.body.friendId;
 
     const user = await db.User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const friend = await db.User.findByPk(friendId);
 
     if (!friend) {
       return res.status(404).json({ message: "Friend not found" });
     }
 
-    // Remove friend
-    await user.removeFriend(friend);
+    // Check if the user is friends with the friend
+    const friendship = await db.UserFriends.findAll({
+      where: {
+        [Op.or]: [
+          { userId: userId, friendId: friendId },
+          { userId: friendId, friendId: userId },
+        ],
+        status: "accepted",
+      },
+    });
+
+    if (!friendship) {
+      return res.status(404).json({ message: "Friend not found" });
+    }
+
+    friendship.forEach(friend => {
+      friend.destroy();
+    });
+
+    // await user.removeFriend(friend);
 
     res.status(200).json({ message: "Friend removed successfully!" });
   } catch (error) {
@@ -137,18 +160,36 @@ exports.getFriends = async (req, res) => {
 
     const friends = await db.User.findAll({
       where: { id: userId }, // Find the logged-in user
-      attributes: ["id", "firstName", "lastName", "email"], // Specify attributes for the user
+      attributes: [], // Omit the user attributes
       include: [
         {
           model: db.User,
           as: "Friends",
           through: { where: { status: "accepted" }, attributes: [] }, // Omit the junction table attributes
-          attributes: ["id", "firstName", "lastName", "email"], // Specify attributes for friends
+          attributes: ["id", "firstName", "lastName", "photo"], // Specify attributes for friends
+          include : [{
+            model: db.Experience,
+            required: false,
+            where: { isPrivate: false, endYear: null },
+            limit: 1
+          }]
         },
       ],
     });
 
-    res.status(200).json(friends);
+    const friendsList = friends.flatMap(user => 
+      user.Friends.map(friend => ({
+          id: friend.id,
+          firstName: friend.firstName,
+          lastName: friend.lastName,
+          photo: friend.photo ? `data:image/jpeg;base64,${friend.photo.toString('base64')}` : null,
+          role: friend.Experiences.length > 0 ? friend.Experiences[0].role : null,
+          company: friend.Experiences.length > 0 ? friend.Experiences[0].company : null,
+      }))
+    );
+
+    res.status(200).json(friendsList);
+
   } catch (error) {
     console.error("Error fetching friends:", error);
     res.status(500).json({ error: error.message });
@@ -185,3 +226,35 @@ exports.getAllFriends = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.checkFriends = async (req, res) => {
+  try {
+    const userId = req.user.id; // The logged-in user
+    const friendId = req.params.id; // The user to check friendship with
+
+    if (userId === friendId) {
+      return res.status(400).json({ message: "You cannot check friendship with yourself" });
+    }
+
+    const friendship = await db.UserFriends.findOne({
+      where: {
+        [Op.or]: [
+          { userId: userId, friendId: friendId },
+          { userId: friendId, friendId: userId },
+        ],
+        status: "accepted",
+      },
+    });
+
+    let response = null;
+    if (friendship) {
+      response = { isFriend: true };
+    } else {
+      response = { isFriend: false };
+    }
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error checking friends:", error);
+    res.status(500).json({ error: error});
+  }
+}

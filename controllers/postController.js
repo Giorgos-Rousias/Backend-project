@@ -163,6 +163,11 @@ exports.getUserSuggestedPosts = async (req, res) => {
 			suggestedPosts = suggestedPosts.concat(friendCommentedPosts);
 		}
 
+		// Remove duplicates
+		suggestedPosts = suggestedPosts.filter((post, index, self) => 
+			index === self.findIndex((p) => p.id === post.id)  // Assuming `id` is the unique property
+		);
+
 		suggestedPosts.sort((a, b) => b.createdAt - a.createdAt);
 		suggestedPosts = suggestedPosts.slice(0, numberOfPosts);
 
@@ -182,7 +187,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 			const returnUserPhoto = post.User.photo
 				? `data:image/jpeg;base64,${post.User.photo.toString('base64')}`
 				: null;
-
+			
 			return {
 				id: post.id,
 				text: post.text,
@@ -283,7 +288,7 @@ exports.likePost = async (req, res) => {
 			return res.status(400).json({ error: "You have already liked this post" });
 		}
 
-		await db.Like.create({
+		const newLike = await db.Like.create({
 			userId: req.user.id,
 			postId: post.id,
 		});
@@ -292,7 +297,7 @@ exports.likePost = async (req, res) => {
 		await createNotification(
 			post.creatorUserId,
 			"like",
-			post.id,
+			newLike.id,
 			`${user.firstName} ${user.lastName} liked your post`,
 		);
 
@@ -359,7 +364,7 @@ exports.createComment = async (req, res) => {
 		await createNotification(
 			post.creatorUserId,
 			"comment",
-			post.id,
+			comment.id,
 			`${user.firstName} ${user.lastName} commented on your post`,
 		);
 
@@ -469,7 +474,8 @@ exports.getAllPosts = async (req, res) => {
 					attributes: [] // We don't need any attributes from the Comment model
 				}
 			],
-			group: ['Post.id'] // Group by Post ID to aggregate likes and comments per post
+			group: ['Post.id'], // Group by Post ID to aggregate likes and comments per post
+			order: [['createdAt', 'DESC']],
 		});
 
 		res.status(200).json(posts);

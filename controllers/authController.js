@@ -77,7 +77,7 @@ exports.login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRATION_TIME }
     );
 
-    const userInfo = { firstName: user.firstName, lastName: user.lastName, hasPhoto: user.hasPhoto};
+    const userInfo = { id: user.id, firstName: user.firstName, lastName: user.lastName, hasPhoto: user.hasPhoto};
     
     // Include the photo in the userInfo if it exists
     if (user.photo) {

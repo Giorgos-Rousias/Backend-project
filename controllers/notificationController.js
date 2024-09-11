@@ -107,6 +107,7 @@ exports.getNotifications = async (req, res) => {
 
         const friendRequests = await db.Notification.findAll({
             where: {
+                userId: req.user.id,
                 type: "friendRequest"
             },
             order: [['createdAt', 'DESC']],

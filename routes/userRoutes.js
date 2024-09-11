@@ -11,8 +11,8 @@ router.get("/noPhoto", userController.getUsersWithoutPhoto);
 const authenticateToken = require("../middlewares/authMiddleware");
 
 router.get("/", authenticateToken, userController.getAllUsers);
-router.get("/xml", authenticateToken, userController.exportUsersXML);
-router.get("/json", authenticateToken, userController.exportUsersJSON);
+router.post("/xml", authenticateToken, userController.exportUsersXML);
+router.post("/json", authenticateToken, userController.exportUsersJSON);
 router.post("/search", authenticateToken, userController.search);
 
 router.put("/change-password", authenticateToken, userController.changePassword);

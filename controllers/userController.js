@@ -8,7 +8,8 @@ const { Op } = require("sequelize");
 exports.getUserProfile = async (req, res) => {
 	try {
 		const isAdmin = req.user.isAdmin;
-		let excludeFields = []
+		let excludeFields = ["password"]
+		console.log("isAdmin", isAdmin);
 		if(!isAdmin) {
 			excludeFields = ["id", "email", "password", "isAdmin", "createdAt", "updatedAt"];
 		}
@@ -20,11 +21,9 @@ exports.getUserProfile = async (req, res) => {
 			return res.status(404).json({ message: "User not found" });
 		}
 		const userWithTransformedPhotos = {
-            firstName: user.firstName,
-            lastName: user.lastName,
+            ...user.toJSON(),
             photo: user.photo ? `data:image/jpeg;base64,${user.photo.toString('base64')}` : null,
         };
-		console.log(userWithTransformedPhotos);
 
 		//Get user's skill 
 		const skills = await db.Skill.findAll({
@@ -118,33 +117,104 @@ exports.exportUsersJSON = async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 };
+// Recursive function to deeply expand and sanitize the user object
+function expandAndSanitizeObject(obj) {
+    const sanitizedObj = {};
+
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            const value = obj[key];
+
+            // If value is a Buffer (e.g., photo), convert it to Base64
+            if (Buffer.isBuffer(value)) {
+                sanitizedObj[key] = value.toString('base64');
+            }
+            // If value is an array, wrap each element in a proper XML-friendly name
+            else if (Array.isArray(value)) {
+                sanitizedObj[key] = value.map(item => expandAndSanitizeObject(item)); // Recursively expand each array item
+            }
+            // If value is an object, recursively expand it
+            else if (typeof value === 'object' && value !== null) {
+                sanitizedObj[key] = expandAndSanitizeObject(value);
+            }
+            // Otherwise, just assign the value directly
+            else {
+                sanitizedObj[key] = value;
+            }
+        }
+    }
+
+    return sanitizedObj;
+}
 
 exports.exportUsersXML = async (req, res) => {
-	try {
-		if(!req.user) {
-			return res.status(401).json({ message: "Unauthorized" });
-		}
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
 
-		if (!req.user.isAdmin) {
-			return res.status(403).json({ message: "Unauthorized" });
-		}
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
 
-		const usersId = req.body.usersId;
-		if (!usersId) {
-			return res.status(400).json({ message: "Users ID are required" });
-		}
+        const usersId = req.body.usersId;
+        if (!usersId) {
+            return res.status(400).json({ message: "Users ID are required" });
+        }
 
-		const users = await usersInfo(usersId);
+        const users = await usersInfo(usersId);
 
-		const xmlData = js2xmlparser.parse("users", users.map(user => user.toJSON()));
+        // Map over users and handle the photo field and nested objects
+        const xmlData = js2xmlparser.parse("users", users.map(
+            (user) => {
+                const userJson = user.toJSON(); // Convert user model to JSON
 
-		res.header('Content-Type', 'application/xml');
-		res.send(xmlData);
-	} catch (error) {
-		console.error("Error fetching users:", error);
-		res.status(500).json({ error: error.message });
-	}
+                // Use the recursive function to expand and sanitize the user data
+                const expandedUser = expandAndSanitizeObject(userJson);
+
+                // Handle array fields like Posts by wrapping them in a valid XML element
+                if (Array.isArray(expandedUser.Posts)) {
+                    expandedUser.Posts = {
+                        Post: expandedUser.Posts
+                    };
+                }
+                if (Array.isArray(expandedUser.Comments)) {
+                    expandedUser.Comments = {
+                        Comment: expandedUser.Comments
+                    };
+                }
+                if (Array.isArray(expandedUser.Likes)) {
+                    expandedUser.Likes = {
+                        Like: expandedUser.Likes
+                    };
+                }
+                if (Array.isArray(expandedUser.Listings)) {
+                    expandedUser.Listings = {
+                        Listing: expandedUser.Listings
+                    };
+                }
+                if (Array.isArray(expandedUser.Friends)) {
+                    expandedUser.Friends = {
+                        Friend: expandedUser.Friends
+                    };
+                }
+
+                return expandedUser;
+            }), {
+            declaration: {
+                encoding: "UTF-8"
+            }
+        });
+
+        // Set the content type and ensure UTF-8 is properly handled
+        res.header('Content-Type', 'application/xml; charset=utf-8');
+        res.send(xmlData);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ error: error.message });
+    }
 };
+
 
 exports.changePassword = async (req, res) => {
 	try {

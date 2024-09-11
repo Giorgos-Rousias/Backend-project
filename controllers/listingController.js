@@ -75,14 +75,102 @@ exports.getListings = async (req, res) => {
             include: [
                 {
                     model: db.User,
-                    attributes: ["id", "firstName", "lastName"],
+                    attributes: ["id", "firstName", "lastName", "photo"],
                 },
             ],
             order: [["createdAt", "DESC"]],
         });
-        res.status(200).json(listings);
+
+        const mappedListings = listings.map((listing) => {
+            const { id, title, description, company, location, salary, createdAt, User } = listing;
+            return {
+                id,
+                title,
+                description,
+                company,
+                location,
+                salary,
+                createdAt,
+                User: {
+                    id: User.id,
+                    firstName: User.firstName,
+                    lastName: User.lastName,
+                    photo: User.photo ? `data:image/jpeg;base64,${User.photo.toString('base64')}` : null,
+                },
+            };
+        });
+
+        res.status(200).json(mappedListings);
     } catch (error) {
         console.error("Error getting listings:", error);
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getApplicants = async (req, res) => {
+    try {
+        if (!req.params.id) {
+            return res.status(400).json({ message: "Listing param not found" });
+        }
+
+        const listing = await db.Listing.findByPk(
+            req.params.id,{ 
+                include: { 
+                    model: db.User,
+                    as: 'Applicants',
+                    attributes: ["id", "firstName", "lastName", "photo", "phoneNumber", "email"],
+                } 
+        });
+
+        if (!listing) {
+            return res.status(404).json({ message: "Listing not found" });
+        }
+
+        if(listing.userId !== req.user.id) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const mappedApplicants = listing.Applicants.map((applicant) => {
+            return {
+                id: applicant.id,
+                firstName: applicant.firstName,
+                lastName: applicant.lastName,
+                photo: applicant.photo ? `data:image/jpeg;base64,${applicant.photo.toString('base64')}` : null,
+                phoneNumber: applicant.phoneNumber,
+                email: applicant.email,
+            };
+        });
+
+        return res.status(200).json(mappedApplicants);
+
+    } catch (error) {
+        console.error("Error getting applicants:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.applyToListing = async (req, res) => {
+    try {
+        if(!req.user.id) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+
+        if (!req.params.id) {
+            return res.status(400).json({ message: "Listing param not found" });
+        }
+
+        const user = await db.User.findByPk(req.user.id);
+        const listing = await db.Listing.findByPk(req.params.id);
+
+        if (!user || !listing) {
+            throw new Error('User or Listing not found');
+        }
+
+        await user.addAppliedToListing(listing);
+
+        res.status(200).json({ message: "Applied to listing" });
+    } catch (error) {
+        console.error("Error getting applicants:", error);
+        res.status(500).json({ error: error.message });
+    }
+}

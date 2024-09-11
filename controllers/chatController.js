@@ -53,7 +53,7 @@ exports.createChat = async (req, res) => {
             return res.status(500).json({ message: "Error creating chat" });
         }
 
-        res.status(200).json({ message: "Chat created successfully"});
+        res.status(200).json(newChat);
     } catch(error) {
         console.error("Error creating chat:", error);
         res.status(500).json({ error: error.message });
@@ -124,7 +124,7 @@ exports.getChatMessages = async (req, res) => {
                     [Op.lt]: new Date(before),
                 },
             },
-            attributes: { exclude: ["chatId", "id", "updatedAt"] },
+            attributes: { exclude: ["chatId", "createdAt"] },
             order: [
                 ["createdAt", "ASC"],
             ],
@@ -149,9 +149,6 @@ exports.getUserChats = async (req, res) => {
                     { userId1: req.user.id },
                     { userId2: req.user.id },
                 ],
-                updatedAt: {
-                    [Op.lt]: new Date(before),
-                },
             },
             order: [["updatedAt", "DESC"]],
             limit: 5,
@@ -161,7 +158,29 @@ exports.getUserChats = async (req, res) => {
             return res.status(404).json({ message: "Chats not found" });
         }
 
-        res.status(200).json(chats);
+        const mappedChats = await Promise.all(chats.map(async (chat) => {
+            const user1 = await db.User.findByPk(chat.userId1);
+            const user2 = await db.User.findByPk(chat.userId2);
+
+            // console.log(user1);
+            // console.log(user2);
+
+            return {
+                id: chat.id,
+                user1Id: chat.userId1,
+                user1FirstName: user1.firstName,
+                user1LastName: user1.lastName,
+                user1Photo: user1.photo ? `data:image/jpeg;base64,${user1.photo.toString('base64')}` : null,
+                user2Id: chat.userId2,
+                user2FirstName: user2.firstName,
+                user2LastName: user2.lastName,
+                user2Photo: user2.photo ? `data:image/jpeg;base64,${user2.photo.toString('base64')}` : null,
+                lastMessage: chat.lastMessage,
+                updatedAt: chat.updatedAt,
+            };
+        }));
+
+        res.status(200).json(mappedChats);
     } catch (error) {
         console.error("Error getting users chats:", error);
         res.status(500).json({ error: error.message });

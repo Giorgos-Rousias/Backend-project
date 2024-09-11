@@ -6,7 +6,7 @@ const Listing = sequelize.define("Listing", {
         allowNull: false,
     },
     description: {
-        type: sequelize.Sequelize.STRING,
+        type: sequelize.Sequelize.TEXT,
         allowNull: false,
     },
     company: {

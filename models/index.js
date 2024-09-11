@@ -62,6 +62,19 @@ Post.associate = (models) => {
 		onDelete: 'CASCADE',
 	});
 }
+User.belongsToMany(Listing, {
+	as: 'AppliedToListing',
+	through: 'UserApplications', // Junction table
+	foreignKey: 'userId',
+	otherKey: 'listingId',
+});
+
+Listing.belongsToMany(User, {
+	as: 'Applicants',
+	through: 'UserApplications', // Junction table
+	foreignKey: 'listingId',
+	otherKey: 'userId',
+});
 
 const db = {
 	sequelize,

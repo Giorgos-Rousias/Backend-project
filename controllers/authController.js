@@ -1,6 +1,6 @@
 // controllers/authController.js
 const { UniqueConstraintError, ValidationError } = require("sequelize");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../models");
 

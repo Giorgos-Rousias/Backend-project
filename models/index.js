@@ -1,5 +1,5 @@
 const sequelize = require("../sequelize");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 const User = require("./user"); // Import the user model
 const Experience = require("./userInfoModels/experience"); // Import the experience model

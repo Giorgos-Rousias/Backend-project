@@ -1,7 +1,7 @@
 // controllers/userController.js
 const { UniqueConstraintError, ValidationError } = require("sequelize");
 const db = require("../models");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const js2xmlparser = require('js2xmlparser');
 const { Op } = require("sequelize");
 

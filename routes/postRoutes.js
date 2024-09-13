@@ -4,8 +4,9 @@ const uploadMiddleware = require("../middlewares/uploadMiddleware");
 
 const postController = require("../controllers/postController");
 
-const authenticateToken = require("../middlewares/authMiddleware");
+router.post("/dummy", postController.dummyDataGenerator);
 
+const authenticateToken = require("../middlewares/authMiddleware");
 router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts);
 
 router.post( "/createPost", authenticateToken, uploadMiddleware.single("file"), postController.createPost);
@@ -19,6 +20,8 @@ router.post( "/:id/comment", authenticateToken, postController.createComment);
 router.delete( "/:id/:commentId/deleteComment", authenticateToken, postController.deleteComment);
 
 router.get( "/:id/getPostsComments", authenticateToken, postController.getPostsComments);
+
+
 
 //! For testing purposes
 router.get( "/get", postController.getAllPosts);

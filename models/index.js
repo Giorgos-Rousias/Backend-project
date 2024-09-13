@@ -93,26 +93,31 @@ const db = {
 };
 
 (async () => {
-    const admin = await User.findOne({
-        where: {
-            email: 'admin@admin.com',
-        }
-    });
+	try {
+		const admin = await User.findOne({
+			where: {
+				email: 'admin@admin.com',
+			}
+		});
 
-    if (!admin) {
-        const hashedPassword = await bcrypt.hash("admin", 10); // Use await to resolve the promise
-        
-        await User.create({
-            firstName: 'Admin',
-            lastName: ' ',
-            email: 'admin@admin.com',
-            password: hashedPassword, // Ensure this is the resolved string
-            isAdmin: true,
-            phoneNumber: '1234567890',
-            photo: null,
-            hasPhoto: false,
-        });
-    }
+		if (!admin) {
+			const hashedPassword = await bcrypt.hash("admin", 10); // Use await to resolve the promise
+			
+			await User.create({
+				firstName: 'Admin',
+				lastName: ' ',
+				email: 'admin@admin.com',
+				password: hashedPassword, // Ensure this is the resolved string
+				isAdmin: true,
+				phoneNumber: '1234567890',
+				photo: null,
+				hasPhoto: false,
+			});
+		}
+	} catch (error) {
+		console.error("Error connecting to the database: ", error);
+		process.exit(1);
+	}
 })();
 
 module.exports = db;

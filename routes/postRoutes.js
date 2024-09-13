@@ -9,6 +9,11 @@ router.post("/dummy", postController.dummyDataGenerator);
 const authenticateToken = require("../middlewares/authMiddleware");
 router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts);
 
+
+//
+router.get("/suggestedPosts2", authenticateToken, postController.getUserSuggestedPosts2);
+// 
+
 router.post( "/createPost", authenticateToken, uploadMiddleware.single("file"), postController.createPost);
 router.put( "/:id/updatePost", authenticateToken, postController.updatePost);
 router.delete( "/:id/deletePost", authenticateToken, postController.deletePost);

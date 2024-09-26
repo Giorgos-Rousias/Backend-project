@@ -24,7 +24,7 @@ const Listing = sequelize.define("Listing", {
     userId: {
         type: sequelize.Sequelize.INTEGER,
         allowNull: false,
-    },
+    }
 }, {
     timestamps: true,
 }

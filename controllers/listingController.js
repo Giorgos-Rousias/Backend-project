@@ -174,3 +174,33 @@ exports.applyToListing = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 }
+
+exports.markAsSeen = async (req, res) => {
+    try {
+        if(!req.params.id) {
+            return res.status(400).json({ message: "Missing listing ID" });
+        }
+
+        const listing = await db.Listing.findByPk(req.params.id);
+        if (!listing) {
+            return res.status(404).json({ message: "Listing not found" });
+        }
+
+        const user = await db.User.findByPk(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const alreadySeen = await user.hasSeen(listing);
+        if (alreadySeen) {
+            return res.status(200).json({ message: "Listing already marked as seen" });
+        }
+
+        await user.addSeen(listing);
+        res.status(200).json({ message: "Listing marked as seen" });
+
+    } catch (error) {
+        console.error("Error marking listing as seen:", error);
+        res.status(500).json({ error: error.message });
+    }
+}

@@ -13,6 +13,7 @@ const Chat = require("./chatModels/chat"); // Import the chat model
 const Message = require("./chatModels/message"); // Import the chat model
 const Notification = require("./notification"); // Import the notification model
 const Listing = require("./listing"); // Import the listing model
+const SeenListings = require("./seenListings"); // Import the seenListings model
 
 User.hasMany(Education, { foreignKey: "userId" });
 Education.belongsTo(User, { foreignKey: "userId" });
@@ -76,6 +77,13 @@ Listing.belongsToMany(User, {
 	otherKey: 'userId',
 });
 
+User.belongsToMany(Listing, {
+    as: 'Seen', // Alias for the listings a user has seen
+    through: 'SeenListings', // Junction table
+    foreignKey: 'userId',
+    otherKey: 'listingId',
+});
+
 const db = {
 	sequelize,
 	User,
@@ -90,6 +98,7 @@ const db = {
 	Message,
 	Notification,
 	Listing,
+	SeenListings,
 };
 
 (async () => {

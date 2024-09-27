@@ -86,7 +86,13 @@ const usersInfo = async (usersId) => {
 					model: db.Like
 				}, {
 					model: db.Listing
-				},{
+				}, {
+					model: db.Listing, 
+					as: 'AppliedToListing',
+					through: {
+						attributes: []
+					}
+				} ,{
 					model: db.User,
 					as: 'Friends',
 					attributes: { exclude: ["password", "email", "phoneNumber", "createdAt", "updatedAt", "isAdmin", "photo", "hasPhoto"]},
@@ -111,7 +117,8 @@ exports.exportUsersJSON = async (req, res) => {
 			return res.status(400).json({ message: "Users ID are required" });
 		}
 
-		res.send(await usersInfo(usersId));
+		const userInf =  await usersInfo(usersId)
+		res.status(200).json(userInf);
 	} catch (error) {
 		console.error("Error fetching users:", error);
 		res.status(500).json({ error: error.message });

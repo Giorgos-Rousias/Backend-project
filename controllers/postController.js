@@ -624,7 +624,8 @@ exports.getUserSuggestedPosts2 = async (req, res) => {
         postScores.sort((a, b) => b.score - a.score);
 
         // Step 8: Limit the number of posts and fetch post details
-        const topPostScores = postScores.slice(0, limit);
+        // const topPostScores = postScores.slice(0, limit);
+        const topPostScores = postScores;
         const topPostIds = topPostScores.map(p => p.postId);
 
         const topPosts = await db.Post.findAll({
@@ -678,7 +679,7 @@ exports.dummyDataGenerator = async (req, res) => {
 	try {
 		const hashedPassword = await bcrypt.hash("1234", 10); 
 		
-		const newUsers = 5;
+		const newUsers = 30;
 		for (let i = 0; i < newUsers; i++) {
 			await db.User.create({
 				firstName: faker.person.firstName(),
@@ -698,251 +699,268 @@ exports.dummyDataGenerator = async (req, res) => {
 		})
 		console.log(users.length)
 
-		users.forEach((user) => {
-
-			function getRandomNumbersWithDuplicatesRemoved(count, min, max, excludeId) {
-				const numbers = [];
-
-				// Generate random numbers, excluding excludeId
-				for (let i = 0; i < count; i++) {
-					let randomNum;
-					do {
-						randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
-					} while (randomNum === excludeId); // Ensure excludeId is not added
-					numbers.push(randomNum);
+		async function processUsers(users) {
+			for (const user of users) {
+				
+				function getRandomNumbersWithDuplicatesRemoved(count, min, max, excludeId) {
+					const numbers = [];
+					for (let i = 0; i < count; i++) {
+						let randomNum;
+						do {
+							randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
+						} while (randomNum === excludeId);
+						numbers.push(randomNum);
+					}
+					return Array.from(new Set(numbers));
 				}
 
-				// Remove duplicates by converting to a Set and back to an Array
-				const uniqueNumbers = Array.from(new Set(numbers));
+				// Create Friends
+				const createFriends = async (userId) => {
+					try {
+						let maxFriends = 9;
+						let minFriends = 0;
+						const randomNumFriends = Math.floor(Math.random() * (maxFriends - minFriends + 1)) + minFriends;
+						const randomUsers = getRandomNumbersWithDuplicatesRemoved(randomNumFriends, 2, users.length, user.id);
 
-				return uniqueNumbers;
-			}
+						for (const id of randomUsers) {
+							let isFriends = await db.UserFriends.findOne({
+								where: {
+									userId: id,
+									friendId: userId
+								}
+							});
+							if (isFriends !== null) continue;
 
-			// Create Friends
-			const createFriends = async (userId) => {
-				try {
+							isFriends = await db.UserFriends.findOne({
+								where: {
+									userId: userId,
+									friendId: id
+								}
+							});
+							if (isFriends !== null) continue;
 
-					let maxFriends = 9;
-					let minFriends = 0;
-					const randomNumFriends = Math.floor(Math.random() * (maxFriends - minFriends + 1)) + minFriends;
-					const randomUsers = getRandomNumbersWithDuplicatesRemoved(randomNumFriends, 2, users.length, user.id);
-
-					for (const id of randomUsers) {
-						const isFriends = await db.UserFriends.findOne({
-							where: {
-								userId: id,
-								friendId: userId
-							}
-						}) || await db.UserFriends.findOne({
-							where: {
-								userId: userId,
-								friendId: id
-							}
-						});
-
-						// If friendship already exists, skip creating
-						if (isFriends !== null) {
-							continue; // Skip to the next user
+							await db.UserFriends.create({ userId, friendId: id, status: "accepted" });
+							await db.UserFriends.create({ userId: id, friendId: userId, status: "accepted" });
 						}
-
-						// Create new friendship entries for both directions
-						await db.UserFriends.create({
-							userId: userId,
-							friendId: id,
-							status: "accepted"
-						});
-
-						await db.UserFriends.create({
-							userId: id,
-							friendId: userId,
-							status: "accepted"
-						});
+					} catch (error) {
+						console.log("Error creating friends: ", error);
 					}
-				} catch (error) {
-					console.log("Error creating friends: ", error);
-				}
-			};
+				};
 
-			createFriends(user.id);
+				// Create Posts
+				const createPosts = async (userId) => {
+					try {
+						let maxPost = 4;
+						let minPost = 0;
+						const randomNumPosts = Math.floor(Math.random() * (maxPost - minPost + 1)) + minPost;
+						const randomPosts = getRandomNumbersWithDuplicatesRemoved(randomNumPosts, 0, 150, -1);
 
-			// Create posts
-			const createPosts = async (userId) => {
-				try {
-					let maxPost = 4;
-					let minPost = 0;
-					const randomNumPosts = Math.floor(Math.random() * (maxPost - minPost + 1)) + minPost;
-					const randomPosts = getRandomNumbersWithDuplicatesRemoved(randomNumPosts, 0, 150, -1);
-
-					for (const id of randomPosts) {
-						await db.Post.create({
-							creatorUserId: userId,
-							text: postTexts[id]
-						});
+						for (const id of randomPosts) {
+							await db.Post.create({
+								creatorUserId: userId,
+								text: postTexts[id]
+							});
+						}
+					} catch (error) {
+						console.log("Error creating posts: ", error);
 					}
-				} catch (error) {
-					console.log("Error creating friends: ", error);
-				}
-			};
+				};
 
-			createPosts(user.id);
+				// Create Likes
+				const createLikes = async (userId) => {
+					try {
+						const posts = await db.User.findAll();
+						let maxLikes = 10;
+						let minLikes = 1;
+						const randomNumLikes = Math.floor(Math.random() * (maxLikes - minLikes + 1)) + minLikes;
+						const randomLikes = getRandomNumbersWithDuplicatesRemoved(randomNumLikes, 1, posts.length, -1);
 
-			// Create Likes
-			// const posts = /*await*/ db.User.findAll();
-			// console.log(posts.length);
+						for (const id of randomLikes) {
+							const post = await db.Post.findByPk(id);
+							if (!post) continue;
+							const isLiked = await db.Like.findOne({ where: { userId, postId: id } });
+							if (isLiked !== null) continue;
 
-			const createLikes = async (userId) => {
-				try {
-
-					const posts = await db.User.findAll();
-					// console.log(posts.length);
-					let maxLikes = 10;
-					let minLikes = 1;
-					const randomNumLikes = Math.floor(Math.random() * (maxLikes - minLikes + 1)) + minLikes;
-					const randomLikes = getRandomNumbersWithDuplicatesRemoved(randomNumLikes, 1, posts.length, -1);
-
-					for (const id of randomLikes) {
-						await db.Like.create({
-							userId: userId,
-							postId: id
-						});
+							await db.Like.create({ userId, postId: id });
+						}
+					} catch (error) {
+						console.log("Error creating likes: ", error);
 					}
-				} catch (error) {
-					console.log("Error creating friends: ", error);
-				}
-			};
+				};
 
-			createLikes(user.id);
+				// Create Comments
+				const createComments = async (userId) => {
+					try {
+						const posts = await db.User.findAll();
+						let maxComments = 4;
+						let minComments = 0;
+						const randomNumComments = Math.floor(Math.random() * (maxComments - minComments + 1)) + minComments;
+						const randomComments = getRandomNumbersWithDuplicatesRemoved(randomNumComments, 1, posts.length, -1);
 
-			// Create Comments
-			const createComments = async (userId) => {
-				try {
-					const posts = await db.User.findAll();
-					// console.log(posts.length);
-					let maxComments = 4;
-					let minComments = 0;
-					const randomNumComments = Math.floor(Math.random() * (maxComments - minComments + 1)) + minComments;
-					const randomCommnents = getRandomNumbersWithDuplicatesRemoved(randomNumComments, 1, posts.length, -1);
-
-					for (const id of randomCommnents) {
-						await db.Comment.create({
-							userId: userId,
-							postId: id,
-							text: "No importance"
-						})
+						for (const id of randomComments) {
+							const post = await db.Post.findByPk(id);
+							if (!post) continue;
+							await db.Comment.create({
+								userId,
+								postId: id,
+								text: "No importance"
+							});
+						}
+					} catch (error) {
+						console.log("Error creating comments: ", error);
 					}
-				} catch (error) {
-					console.log("Error creating friends: ", error);
-				}
-			};
+				};
 
-			createComments(user.id);
+				// Create Job Listings
+				const createJobListings = async (userId) => {
+					try {
+						let maxJobListings = 4;
+						let minJobListings = 0;
+						const randomNumJobListings = Math.floor(Math.random() * (maxJobListings - minJobListings + 1)) + minJobListings;
 
-			const createJobListings = async (userId) => {
-				try {
-					let maxJobListings = 4;
-					let minJobListings = 0;
-					const randomNumJobListings = Math.floor(Math.random() * (maxJobListings - minJobListings + 1)) + minJobListings;
-
-					for (let i = 0; i < randomNumJobListings; i++) {
-						await db.Listing.create({
-							userId: userId,
-							title: faker.person.jobTitle(),
-							description: faker.lorem.paragraph(),
-							location: faker.location.city(),
-							company: faker.company.name(),
-							salary: faker.finance.amount()
-						});
+						for (let i = 0; i < randomNumJobListings; i++) {
+							await db.Listing.create({
+								userId,
+								title: faker.person.jobTitle(),
+								description: faker.lorem.paragraph(),
+								location: faker.location.city(),
+								company: faker.company.name(),
+								salary: faker.finance.amount()
+							});
+						}
+					} catch (error) {
+						console.log("Error creating job listings: ", error);
 					}
-				} catch (error) {
-					console.log("Error creating job listings: ", error);
-				}
-			};
+				};
 
-			createJobListings(user.id);
-			
-			// Random chance for the user to appy to a job listing
-			const createApplications = async (user) => {
-				try {
-					const jobListings = await db.Listing.findAll();
-					let maxApplications = 4;
-					let minApplications = 0;
-					const randomNumApplications = Math.floor(Math.random() * (maxApplications - minApplications + 1)) + minApplications;
+				// Create Applications
+				const createApplications = async (user) => {
+					try {
+						const jobListings = await db.Listing.findAll();
+						if (!jobListings || jobListings.length === 0) return;
+						console.log(jobListings.length);
 
-					for (let i = 0; i < randomNumApplications; i++) {
-						const randomJobListing = jobListings[Math.floor(Math.random() * jobListings.length)];
-						await user.addAppliedToListing(randomJobListing);
+						const maxApplications = 4;
+						const minApplications = 0;
+						const randomNumApplications = Math.floor(Math.random() * (maxApplications - minApplications + 1)) + minApplications;
+						const appliedListings = new Set();
+
+						for (let i = 0; i < randomNumApplications; i++) {
+							const randomJobListing = jobListings[Math.floor(Math.random() * jobListings.length)];
+							
+							if (appliedListings.has(randomJobListing.id)){
+								console.log("Duplicate application");
+								continue;
+							}
+
+							appliedListings.add(randomJobListing.id);
+							await user.addAppliedToListing(randomJobListing);
+						}
+					} catch (error) {
+						console.log("Error creating applications: ", error);
 					}
-				} catch (error) {
-					console.log("Error creating applications: ", error);
-				}
+				};
+
+				// Create Skills
+				const createSkills = async (userId) => {
+					try {
+						let maxSkills = 5;
+						let minSkills = 0;
+						const randomNumSkills = Math.floor(Math.random() * (maxSkills - minSkills + 1)) + minSkills;
+						for (let i = 0; i < randomNumSkills; i++) {
+							await db.Skill.create({
+								userId,
+								skill: faker.lorem.word(),
+								description: faker.lorem.sentence()
+							});
+						}
+					} catch (error) {
+						console.log("Error creating skills: ", error);
+					}
+				};
+
+				// Create Education
+				const createEducation = async (userId) => {
+					try {
+						let maxEducation = 4;
+						let minEducation = 0;
+						const randomNumEducation = Math.floor(Math.random() * (maxEducation - minEducation + 1)) + minEducation;
+						for (let i = 0; i < randomNumEducation; i++) {
+							await db.Education.create({
+								userId,
+								institution: faker.company.name(),
+								degree: faker.lorem.word(),
+								startYear: faker.number.int({ min: 2000, max: 2020 }),
+								endYear: 2020,
+							});
+						}
+					} catch (error) {
+						console.log("Error creating education: ", error);
+					}
+				};
+
+				// Create Experience
+				const createExperience = async (userId) => {
+					try {
+						let maxExperience = 4;
+						let minExperience = 0;
+						const randomNumExperience = Math.floor(Math.random() * (maxExperience - minExperience + 1)) + minExperience;
+
+						for (let i = 0; i < randomNumExperience; i++) {
+							await db.Experience.create({
+								userId,
+								company: faker.company.name(),
+								role: faker.person.jobTitle(),
+								startYear: faker.number.int({ min: 2000, max: 2020 }),
+								endYear: 2020,
+							});
+						}
+					} catch (error) {
+						console.log("Error creating experience: ", error);
+					}
+				};
+
+				const createSeeListings = async (user) => {
+					try {
+						let maxSeeListings = 4;
+						let minSeeListings = 0;
+						const randomNumSeeListings = Math.floor(Math.random() * (maxSeeListings - minSeeListings + 1)) + minSeeListings;
+						const randomListings = getRandomNumbersWithDuplicatesRemoved(randomNumSeeListings, 0, 150, -1);
+
+						for (const id of randomListings) {
+							const listing = await db.Listing.findByPk(id);
+							if (!listing) {
+								continue;
+							}
+
+							const alreadySeen = await user.hasSeen(listing);
+							if (!alreadySeen) {
+								continue;
+							}
+
+							await user.addSeen(listing);
+						}
+					} catch (error) {
+						console.log("Error creating see listing: ", error);
+					}
+				};
+
+				// Now calling each async function for the user in sequence
+				await createFriends(user.id);
+				await createPosts(user.id);
+				await createLikes(user.id);
+				await createComments(user.id);
+				await createJobListings(user.id);
+				await createApplications(user);
+				await createSkills(user.id);
+				await createEducation(user.id);
+				await createExperience(user.id);
+				await createSeeListings(user);
 			}
+		}
 
-			createApplications(user);
-
-			// Create Skills
-			const createSkills = async (userId) => {
-				try {
-					let maxSkills = 5;
-					let minSkills = 0;
-					const randomNumSkills = Math.floor(Math.random() * (maxSkills - minSkills + 1)) + minSkills;
-					console.log("randomNumSkills: ", randomNumSkills);
-					for (let i = 0; i < randomNumSkills; i++) {
-						await db.Skill.create({
-							userId: userId,
-							skill: faker.lorem.word(),
-							description: faker.lorem.sentence()
-						});
-					}
-				} catch (error) {
-					console.log("Error creating skills: ", error);
-				}
-			};
-
-			createSkills(user.id);
-
-			// Create Education
-			// const createEducation = async (userId) => {
-			// 	try {
-			// 		let maxEducation = 4;
-			// 		let minEducation = 0;
-			// 		const randomNumEducation = Math.floor(Math.random() * (maxEducation - minEducation + 1)) + minEducation;
-			// 		console.log("randomNumEducation: ", randomNumEducation);
-			// 		for (let i = 0; i < randomNumEducation; i++) {
-			// 			await db.Education.create({
-			// 				userId: userId,
-			// 				institution: faker.company.name(),
-			// 				degree: faker.lorem.word(),
-			// 				startDate: faker.date.past(),
-			// 				endDate: faker.date.recent()
-			// 			});
-			// 		}
-			// 	} catch (error) {
-			// 		console.log("Error creating education: ", error);
-			// 	}
-			// }
-			// createEducation(user.id);
-
-			// const createExperience = async (userId) => {
-			// 	try {
-			// 		let maxExperience = 4;
-			// 		let minExperience = 0;
-			// 		const randomNumExperience = Math.floor(Math.random() * (maxExperience - minExperience + 1)) + minExperience;
-
-			// 		for (let i = 0; i < randomNumExperience; i++) {
-			// 			await db.Experience.create({
-			// 				userId: userId,
-			// 				company: faker.company.name(),
-			// 				role: faker.person.jobTitle(),
-			// 				startDate: faker.date.past(),
-			// 				endDate: faker.date.recent()
-			// 			});
-			// 		}
-			// 	} catch (error) {
-			// 		console.log("Error creating experience: ", error);
-			// 	}
-			// };
-			// createExperience(user.id);
-		})
+		// Call the function with the users array
+		await processUsers(users);
 
 		res.status(200).json({
 			message: "Dummy data created successfully",

@@ -7,7 +7,7 @@ const postController = require("../controllers/postController");
 router.post("/dummy", postController.dummyDataGenerator);
 
 const authenticateToken = require("../middlewares/authMiddleware");
-router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts);
+router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts2);
 
 
 //

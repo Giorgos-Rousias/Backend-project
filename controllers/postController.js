@@ -678,7 +678,7 @@ exports.dummyDataGenerator = async (req, res) => {
 	try {
 		const hashedPassword = await bcrypt.hash("1234", 10); 
 		
-		const newUsers = 100;
+		const newUsers = 5;
 		for (let i = 0; i < newUsers; i++) {
 			await db.User.create({
 				firstName: faker.person.firstName(),
@@ -836,6 +836,112 @@ exports.dummyDataGenerator = async (req, res) => {
 			};
 
 			createComments(user.id);
+
+			const createJobListings = async (userId) => {
+				try {
+					let maxJobListings = 4;
+					let minJobListings = 0;
+					const randomNumJobListings = Math.floor(Math.random() * (maxJobListings - minJobListings + 1)) + minJobListings;
+
+					for (let i = 0; i < randomNumJobListings; i++) {
+						await db.Listing.create({
+							userId: userId,
+							title: faker.person.jobTitle(),
+							description: faker.lorem.paragraph(),
+							location: faker.location.city(),
+							company: faker.company.name(),
+							salary: faker.finance.amount()
+						});
+					}
+				} catch (error) {
+					console.log("Error creating job listings: ", error);
+				}
+			};
+
+			createJobListings(user.id);
+			
+			// Random chance for the user to appy to a job listing
+			const createApplications = async (user) => {
+				try {
+					const jobListings = await db.Listing.findAll();
+					let maxApplications = 4;
+					let minApplications = 0;
+					const randomNumApplications = Math.floor(Math.random() * (maxApplications - minApplications + 1)) + minApplications;
+
+					for (let i = 0; i < randomNumApplications; i++) {
+						const randomJobListing = jobListings[Math.floor(Math.random() * jobListings.length)];
+						await user.addAppliedToListing(randomJobListing);
+					}
+				} catch (error) {
+					console.log("Error creating applications: ", error);
+				}
+			}
+
+			createApplications(user);
+
+			// Create Skills
+			const createSkills = async (userId) => {
+				try {
+					let maxSkills = 5;
+					let minSkills = 0;
+					const randomNumSkills = Math.floor(Math.random() * (maxSkills - minSkills + 1)) + minSkills;
+					console.log("randomNumSkills: ", randomNumSkills);
+					for (let i = 0; i < randomNumSkills; i++) {
+						await db.Skill.create({
+							userId: userId,
+							skill: faker.lorem.word(),
+							description: faker.lorem.sentence()
+						});
+					}
+				} catch (error) {
+					console.log("Error creating skills: ", error);
+				}
+			};
+
+			createSkills(user.id);
+
+			// Create Education
+			// const createEducation = async (userId) => {
+			// 	try {
+			// 		let maxEducation = 4;
+			// 		let minEducation = 0;
+			// 		const randomNumEducation = Math.floor(Math.random() * (maxEducation - minEducation + 1)) + minEducation;
+			// 		console.log("randomNumEducation: ", randomNumEducation);
+			// 		for (let i = 0; i < randomNumEducation; i++) {
+			// 			await db.Education.create({
+			// 				userId: userId,
+			// 				institution: faker.company.name(),
+			// 				degree: faker.lorem.word(),
+			// 				startDate: faker.date.past(),
+			// 				endDate: faker.date.recent()
+			// 			});
+			// 		}
+			// 	} catch (error) {
+			// 		console.log("Error creating education: ", error);
+			// 	}
+			// }
+			// createEducation(user.id);
+
+			// const createExperience = async (userId) => {
+			// 	try {
+			// 		let maxExperience = 4;
+			// 		let minExperience = 0;
+			// 		const randomNumExperience = Math.floor(Math.random() * (maxExperience - minExperience + 1)) + minExperience;
+
+			// 		for (let i = 0; i < randomNumExperience; i++) {
+			// 			await db.Experience.create({
+			// 				userId: userId,
+			// 				company: faker.company.name(),
+			// 				role: faker.person.jobTitle(),
+			// 				startDate: faker.date.past(),
+			// 				endDate: faker.date.recent()
+			// 			});
+			// 		}
+			// 	} catch (error) {
+			// 		console.log("Error creating experience: ", error);
+			// 	}
+			// };
+			// createExperience(user.id);
 		})
 
 		res.status(200).json({

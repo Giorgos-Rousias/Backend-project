@@ -62,154 +62,6 @@ exports.createPost = async (req, res) => {
 	}
 };
 
-exports.getUserSuggestedPosts = async (req, res) => {
-	try {
-		const userId = req.user.id;
-
-		const numberOfPosts = req.body.numberOfPosts ? req.body.numberOfPosts : 3; // Default to 10 posts
-		const date = req.body.lastPostDate ? new Date(req.body.lastPostDate) : new Date(); // Default to current date
-
-		let suggestedPosts = [];
-
-		const user = await db.User.findByPk(userId);
-
-		if (!user) {
-			return res.status(404).json({ error: "User not found" });
-		}
-
-		// Get the user's posts
-		const userPosts = await db.Post.findAll({
-			where: {
-				creatorUserId: userId,
-				createdAt: {
-					[Op.lt]: date,
-				},
-			},
-			order: [["createdAt", "DESC"]],
-			include: {
-				model: db.User,
-				attributes: ["firstName", "lastName", "photo"],
-			},
-		});
-
-		suggestedPosts = suggestedPosts.concat(userPosts);
-
-		const friends = await db.UserFriends.findAll({
-			where: {
-				userId: userId,
-			},
-		});
-
-		if (friends) {
-			const friendIds = friends.map((friend) => friend.friendId);
-
-			const friendPosts = await db.Post.findAll({
-				where: {
-					creatorUserId: friendIds,
-					createdAt: {
-						[Op.lt]: date,
-					},
-				},
-				include: {
-					model: db.User,
-					attributes: ["firstName", "lastName" , "photo"],
-				},
-				order: [["createdAt", "DESC"]],
-				limit: numberOfPosts,
-			});
-
-			suggestedPosts = suggestedPosts.concat(friendPosts);
-
-			const friendLikedPosts = await db.Post.findAll({
-				include: [{
-					model: db.Like,
-					where: {
-						userId: friendIds,
-					},
-					required: true,
-					attributes: [],
-				}, {
-					model: db.User,
-					attributes: ["firstName", "lastName" , "photo"],
-				}],
-				where: {
-					createdAt: {
-						[Op.lt]: date,
-				}},
-				order: [["createdAt", "DESC"]],
-				limit: numberOfPosts,
-			});
-
-			suggestedPosts = suggestedPosts.concat(friendLikedPosts);
-
-			const friendCommentedPosts = await db.Post.findAll({
-				include: [{
-					model: db.Comment,
-					where: {
-						userId: friendIds,
-					},
-					required: true,
-					attributes: [],
-				}, {
-					model: db.User,
-					attributes: ["firstName", "lastName" , "photo"],
-				}],
-				where: {
-					createdAt: {
-						[Op.lt]: date,
-				}},
-				order: [["createdAt", "DESC"]],
-				limit: numberOfPosts,
-			});
-
-			suggestedPosts = suggestedPosts.concat(friendCommentedPosts);
-		}
-
-		// Remove duplicates
-		suggestedPosts = suggestedPosts.filter((post, index, self) => 
-			index === self.findIndex((p) => p.id === post.id)  // Assuming `id` is the unique property
-		);
-
-		suggestedPosts.sort((a, b) => b.createdAt - a.createdAt);
-		suggestedPosts = suggestedPosts.slice(0, numberOfPosts);
-
-		const returnPosts = suggestedPosts.map((post) => {
-			let returnFile = null;
-			if (post.file) {
-				if (post.fileType === "video") {
-					returnFile = `data:video/mp4;base64,${post.file.toString('base64')}`;
-				} else if (post.fileType === "audio") {
-					returnFile = `data:audio/mp3;base64,${post.file.toString('base64')}`;
-				} else {
-					returnFile = `data:image/jpeg;base64,${post.file.toString('base64')}`;
-				}
-			}
-
-			// Process the user photo the same way
-			const returnUserPhoto = post.User.photo
-				? `data:image/jpeg;base64,${post.User.photo.toString('base64')}`
-				: null;
-			
-			return {
-				id: post.id,
-				text: post.text,
-				fileType: post.fileType,  // The fileType should be something like 'image', 'video', or 'audio'
-				file: returnFile,         // The base64 data URI for the media file
-				userId: post.User.id,
-				firstName: post.User.firstName,
-				lastName: post.User.lastName,
-				photo: returnUserPhoto,   // The base64 data URI for the user's profile photo
-			};
-		});
-
-		res.status(200).json(returnPosts);
-
-	} catch (error) {
-		console.error("Error getting suggested posts:", error);
-		res.status(500).json({ error: error.message });
-	}
-};
-
 exports.updatePost = async (req, res) => {
 	try {
 		const post = await db.Post.findByPk(req.params.id);
@@ -534,9 +386,7 @@ const createMatrixFactorization = (interactionMatrix, numUsers, numPosts, latent
     return { U, P };
 };
 
-
-
-exports.getUserSuggestedPosts2 = async (req, res) => {
+exports.getUserSuggestedPosts = async (req, res) => {
     try {
         const userId = req.user.id;
         const limit = req.body.limit ? parseInt(req.body.limit) : 10; // Limit the number of recommended posts, default is 10
@@ -630,10 +480,13 @@ exports.getUserSuggestedPosts2 = async (req, res) => {
 
         const topPosts = await db.Post.findAll({
             where: { id: topPostIds },
-            include: {
+            include: [{
                 model: db.User,
                 attributes: ["firstName", "lastName", "photo"]
-            }
+            }, {
+				model: db.Like,
+				as: 'Likes'
+			}]
         });
 
         // Step 9: Format the response to match the previous version
@@ -661,7 +514,8 @@ exports.getUserSuggestedPosts2 = async (req, res) => {
                 userId: post.User.id,
                 firstName: post.User.firstName,
                 lastName: post.User.lastName,
-                photo: returnUserPhoto
+                photo: returnUserPhoto,
+				likedByUser: post.Likes.some(like => like.userId === userId)
             };
         });
 
@@ -672,8 +526,6 @@ exports.getUserSuggestedPosts2 = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
-
 
 exports.dummyDataGenerator = async (req, res) => {
 	try {
@@ -923,9 +775,12 @@ exports.dummyDataGenerator = async (req, res) => {
 				const createSeeListings = async (user) => {
 					try {
 						let maxSeeListings = 4;
-						let minSeeListings = 0;
+						let minSeeListings = 2;
 						const randomNumSeeListings = Math.floor(Math.random() * (maxSeeListings - minSeeListings + 1)) + minSeeListings;
-						const randomListings = getRandomNumbersWithDuplicatesRemoved(randomNumSeeListings, 0, 150, -1);
+
+						const numberOfListings = await db.Listing.count();
+
+						const randomListings = getRandomNumbersWithDuplicatesRemoved(randomNumSeeListings, 1, numberOfListings, -1);
 
 						for (const id of randomListings) {
 							const listing = await db.Listing.findByPk(id);
@@ -934,7 +789,7 @@ exports.dummyDataGenerator = async (req, res) => {
 							}
 
 							const alreadySeen = await user.hasSeen(listing);
-							if (!alreadySeen) {
+							if (alreadySeen) {
 								continue;
 							}
 

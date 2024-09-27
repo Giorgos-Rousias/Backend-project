@@ -98,8 +98,7 @@ const usersInfo = async (usersId) => {
 					attributes: { exclude: ["password", "email", "phoneNumber", "createdAt", "updatedAt", "isAdmin", "photo", "hasPhoto"]},
 				}]
 		});
-
-		return users;
+	return users;
 }
 
 exports.exportUsersJSON = async (req, res) => {
@@ -124,6 +123,7 @@ exports.exportUsersJSON = async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 };
+
 // Recursive function to deeply expand and sanitize the user object
 function expandAndSanitizeObject(obj) {
     const sanitizedObj = {};
@@ -172,55 +172,102 @@ exports.exportUsersXML = async (req, res) => {
         const users = await usersInfo(usersId);
 
         // Map over users and handle the photo field and nested objects
-        const xmlData = js2xmlparser.parse("users", users.map(
-            (user) => {
-                const userJson = user.toJSON(); // Convert user model to JSON
+        const expandedUsers = users.map((user) => {
+            const userJson = user.toJSON(); // Convert user model to JSON
 
-                // Use the recursive function to expand and sanitize the user data
-                const expandedUser = expandAndSanitizeObject(userJson);
+            // Use the recursive function to expand and sanitize the user data
+            const expandedUser = expandAndSanitizeObject(userJson);
 
-                // Handle array fields like Posts by wrapping them in a valid XML element
-                if (Array.isArray(expandedUser.Posts)) {
-                    expandedUser.Posts = {
-                        Post: expandedUser.Posts
-                    };
-                }
-                if (Array.isArray(expandedUser.Comments)) {
-                    expandedUser.Comments = {
-                        Comment: expandedUser.Comments
-                    };
-                }
-                if (Array.isArray(expandedUser.Likes)) {
-                    expandedUser.Likes = {
-                        Like: expandedUser.Likes
-                    };
-                }
-                if (Array.isArray(expandedUser.Listings)) {
-                    expandedUser.Listings = {
-                        Listing: expandedUser.Listings
-                    };
-                }
-                if (Array.isArray(expandedUser.Friends)) {
-                    expandedUser.Friends = {
-                        Friend: expandedUser.Friends
-                    };
-                }
-
-                return expandedUser;
-            }), {
-            declaration: {
-                encoding: "UTF-8"
+            // Handle array fields like Posts by wrapping them in a valid XML element
+            if (Array.isArray(expandedUser.Posts)) {
+                expandedUser.Posts = {
+                    Post: expandedUser.Posts
+                };
             }
+            if (Array.isArray(expandedUser.Comments)) {
+                expandedUser.Comments = {
+                    Comment: expandedUser.Comments
+                };
+            }
+            if (Array.isArray(expandedUser.Likes)) {
+                expandedUser.Likes = {
+                    Like: expandedUser.Likes
+                };
+            }
+            if (Array.isArray(expandedUser.Listings)) {
+                expandedUser.Listings = {
+                    Listing: expandedUser.Listings
+                };
+            }
+            if (Array.isArray(expandedUser.Friends)) {
+                expandedUser.Friends = {
+                    Friend: expandedUser.Friends
+                };
+            }
+            if (Array.isArray(expandedUser.Skills)) {
+                expandedUser.Skills = {
+                    Skill: expandedUser.Skills
+                };
+            }
+            if (Array.isArray(expandedUser.Education)) {
+                expandedUser.Education = {
+                    Degree: expandedUser.Education
+                };
+            }
+            if (Array.isArray(expandedUser.Experiences)) {
+                expandedUser.Experiences = {
+                    Experience: expandedUser.Experiences
+                };
+            }
+
+            return expandedUser;
         });
+
+		const options = {
+			declaration: {
+				encoding: "UTF-8"
+			},
+			format: {
+				doubleQuotes: true // Ensure double quotes are used in attributes for consistency.
+			},
+			// escape the content to handle any special characters properly.
+			wrapHandlers: {
+				"@": (key, value) => {
+					return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+				}
+			}
+		};
+
+		const removeEmptyFields = (obj) => {
+			for (const key in obj) {
+				if (obj[key] === null || obj[key] === undefined || obj[key] === "") {
+					delete obj[key];
+				} else if (typeof obj[key] === 'object') {
+					removeEmptyFields(obj[key]);
+				}
+			}
+		}
+		expandedUsers.forEach(user => removeEmptyFields(user));
+
+		const xmlData = js2xmlparser.parse("users", { user: expandedUsers }, options);
+
+		const stripBOM = (content) => {
+			if (content.charCodeAt(0) === 0xFEFF) {
+				return content.slice(1);
+			}
+			return content;
+		}
+		const stripedBOMXmlData = stripBOM(xmlData);
 
         // Set the content type and ensure UTF-8 is properly handled
         res.header('Content-Type', 'application/xml; charset=utf-8');
-        res.send(xmlData);
+        res.send(stripedBOMXmlData);
     } catch (error) {
         console.error("Error fetching users:", error);
         res.status(500).json({ error: error.message });
     }
 };
+
 
 
 exports.changePassword = async (req, res) => {

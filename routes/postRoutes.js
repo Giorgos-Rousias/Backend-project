@@ -7,12 +7,7 @@ const postController = require("../controllers/postController");
 router.post("/dummy", postController.dummyDataGenerator);
 
 const authenticateToken = require("../middlewares/authMiddleware");
-router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts2);
-
-
-//
-router.get("/suggestedPosts2", authenticateToken, postController.getUserSuggestedPosts2);
-// 
+router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts); 
 
 router.post( "/createPost", authenticateToken, uploadMiddleware.single("file"), postController.createPost);
 router.put( "/:id/updatePost", authenticateToken, postController.updatePost);

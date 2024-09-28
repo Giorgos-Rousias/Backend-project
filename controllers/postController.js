@@ -151,7 +151,7 @@ exports.likePost = async (req, res) => {
 		await createNotification(
 			post.creatorUserId,
 			"like",
-			newLike.id,
+			post.id,
 			`${user.firstName} ${user.lastName} liked your post`,
 		);
 

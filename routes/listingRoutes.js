@@ -8,7 +8,7 @@ router.get("/:id/applicants", authMiddleware, listingController.getApplicants);
 router.post("/:id/apply", authMiddleware, listingController.applyToListing);
 
 router.post("/", authMiddleware, listingController.create);
-router.get("/", authMiddleware, listingController.getListings);
+router.get("/", authMiddleware, listingController.getListings2);
 router.post("/:id/seen", authMiddleware, listingController.markAsSeen);
 router.put("/:id/", authMiddleware, listingController.update);
 router.delete("/:id/", authMiddleware, listingController.delete);

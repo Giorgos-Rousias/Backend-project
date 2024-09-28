@@ -14,7 +14,6 @@ const SUPPORTED_MIME_TYPES = {
  */
 const determineFileCategoryFromExtension = (file) => {
     const mimeType = file.mimetype;
-    console.log("mimeType: ", mimeType);
 
     if (SUPPORTED_MIME_TYPES.image.includes(mimeType)) {
         return "image";

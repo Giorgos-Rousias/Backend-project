@@ -105,11 +105,11 @@ exports.delete = async (req, res) => {
 };
 
 exports.getAll = async (req, res) => {
-  try {
-    const experiences = await db.Experience.findAll();
-    res.status(200).json(experiences);
-  } catch (error) {
-    console.error("Error fetching all experiences:", error);
-    res.status(500).json({ error: error.message });
-  }
+    try {
+        const experiences = await db.Experience.findAll();
+        res.status(200).json(experiences);
+    } catch (error) {
+        console.error("Error fetching all experiences:", error);
+        res.status(500).json({ error: error.message });
+    }
 };

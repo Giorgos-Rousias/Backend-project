@@ -4,26 +4,22 @@ const uploadMiddleware = require("../middlewares/uploadMiddleware");
 
 const postController = require("../controllers/postController");
 
-router.post("/dummy", postController.dummyDataGenerator);
-
 const authenticateToken = require("../middlewares/authMiddleware");
-router.get("/suggestedPosts", authenticateToken, postController.getUserSuggestedPosts); 
+router.get("/", authenticateToken, postController.getUserSuggestedPosts); 
 
-router.post( "/createPost", authenticateToken, uploadMiddleware.single("file"), postController.createPost);
-router.put( "/:id/updatePost", authenticateToken, postController.updatePost);
-router.delete( "/:id/deletePost", authenticateToken, postController.deletePost);
+router.post( "/", authenticateToken, uploadMiddleware.single("file"), postController.createPost);
+router.put( "/:id/post", authenticateToken, postController.updatePost);
+router.delete( "/:id/post", authenticateToken, postController.deletePost);
 
-router.post( "/:id/likePost", authenticateToken, postController.likePost);
-router.delete( "/:id/unLikePost", authenticateToken, postController.removeLike);
+router.post( "/:id/like", authenticateToken, postController.likePost);
+router.delete( "/:id/like", authenticateToken, postController.removeLike);
 
 router.post( "/:id/comment", authenticateToken, postController.createComment);
-router.delete( "/:id/:commentId/deleteComment", authenticateToken, postController.deleteComment);
+router.delete( "/:id/:commentId/comment", authenticateToken, postController.deleteComment);
 
-router.get( "/:id/getPostsComments", authenticateToken, postController.getPostsComments);
-
-
+router.get( "/:id/comments", authenticateToken, postController.getPostsComments);
 
 //! For testing purposes
-router.get( "/get", postController.getAllPosts);
+// router.get( "/get", postController.getAllPosts);
 
 module.exports = router;

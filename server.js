@@ -13,6 +13,7 @@ const postRoutes = require("./routes/postRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const listingRoutes = require("./routes/listingRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 // Middleware
 app.use(express.json()); // Middleware to parse JSON bodies
@@ -23,10 +24,11 @@ app.use("/users", userRoutes);
 app.use("/auth", authRoutes); // Mount authentication routes
 app.use("/userInfo", userInfoRoutes);
 app.use("/friends", friendlistRoutes);
-app.use("/post", postRoutes);
-app.use("/chat", chatRoutes);
+app.use("/posts", postRoutes);
+app.use("/chats", chatRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/listings", listingRoutes);
+app.use("/admin", adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

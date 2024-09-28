@@ -11,12 +11,12 @@ exports.create = async (req, res) => {
 
         // Create new education for the user
         const education = await db.Education.create({
-          institution,
-          degree,
-          startYear,
-          endYear,
-          userId, // Associate the education with the correct user
-          isPrivate,
+            institution,
+            degree,
+            startYear,
+            endYear,
+            userId, // Associate the education with the correct user
+            isPrivate,
         });
 
         res.status(201).json(education);
@@ -27,29 +27,29 @@ exports.create = async (req, res) => {
 };
 
 exports.getEducation = async (req, res) => {
-  try {
-    const userId = req.user.id; // Extract userId from route parameters
+    try {
+        const userId = req.user.id; // Extract userId from route parameters
 
-    // Check if the user exists
-    const user = await db.User.findByPk(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+        // Check if the user exists
+        const user = await db.User.findByPk(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Fetch the user's education
-    const education = await db.Education.findAll({ where: { userId } });
+        // Fetch the user's education
+        const education = await db.Education.findAll({ where: { userId } });
 
-    // Ensure only one response is sent
-    res.status(200).json(education);
-  } catch (error) {
-    console.error("Error fetching education:", error);
+        // Ensure only one response is sent
+        res.status(200).json(education);
+    } catch (error) {
+        console.error("Error fetching education:", error);
 
-    // Handle errors properly
-    if (!res.headersSent) {
-      // Check if headers are already sent
-      res
-        .status(500)
-        .json({ message: "Error fetching education", error: error.message });
+        // Handle errors properly
+        if (!res.headersSent) {
+        // Check if headers are already sent
+        res
+            .status(500)
+            .json({ message: "Error fetching education", error: error.message });
+        }
     }
-  }
 };
 
 exports.update = async (req, res) => {

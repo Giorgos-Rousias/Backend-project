@@ -162,9 +162,6 @@ exports.getUserChats = async (req, res) => {
             const user1 = await db.User.findByPk(chat.userId1);
             const user2 = await db.User.findByPk(chat.userId2);
 
-            // console.log(user1);
-            // console.log(user2);
-
             return {
                 id: chat.id,
                 user1Id: chat.userId1,

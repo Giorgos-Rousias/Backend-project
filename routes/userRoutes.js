@@ -15,8 +15,8 @@ router.post("/xml", authenticateToken, userController.exportUsersXML);
 router.post("/json", authenticateToken, userController.exportUsersJSON);
 router.post("/search", authenticateToken, userController.search);
 
-router.put("/change-password", authenticateToken, userController.changePassword);
-router.put("/change-email", authenticateToken, userController.changeEmail);
+router.put("/password", authenticateToken, userController.changePassword);
+router.put("/email", authenticateToken, userController.changeEmail);
 
 router.get("/:id/", authenticateToken, userController.getUserProfile); // sequelize searches for a route in greedy mode, so this route should be at the end
 module.exports = router;

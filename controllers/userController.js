@@ -9,7 +9,7 @@ exports.getUserProfile = async (req, res) => {
 	try {
 		const isAdmin = req.user.isAdmin;
 		let excludeFields = ["password"]
-		console.log("isAdmin", isAdmin);
+
 		if(!isAdmin) {
 			excludeFields = ["id", "email", "password", "isAdmin", "createdAt", "updatedAt"];
 		}
@@ -335,8 +335,6 @@ exports.search = async (req , res) => {
 		const input = req.body.input;
 		const limit = req.body.limit ? req.body.limit : 10;
 
-		console.log(input);
-
 		if (!input || input.trim() === "") {
 			return res.status(400).json({ message: "Search input cannot be empty" });
 		}
@@ -416,7 +414,6 @@ exports.createUser = async (req, res) => {
 	} catch (error) {
 		console.error("Error creating user:", error);
 
-		// console.log(error.errors.map(e => e.type));
 		const type = error.errors.map(e => e.type);
 		const message = error.errors.map(e => e.message);
 

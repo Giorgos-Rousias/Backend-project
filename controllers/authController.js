@@ -84,7 +84,6 @@ exports.login = async (req, res) => {
       // Convert buffer to base64 string
       userInfo.photo = `data:image/jpeg;base64,${user.photo.toString('base64')}`;
     }
-    console.log("userInfo", userInfo);
 
     res.status(200).json({ message: "Login successful", token, userInfo });
 

@@ -12,7 +12,7 @@ router.get("/:chatId/messages", authenticateToken, chatController.getChatMessage
 router.post("/:chatId/messages", authenticateToken, chatController.sendMessage); // Send message to chat
 
 // Only for testing purposes
-router.get("/all", chatController.getAllChats); // Get all chats
-router.delete("/all", chatController.deleteAllChats); // Delete all chats
+// router.get("/all", chatController.getAllChats); // Get all chats
+// router.delete("/all", chatController.deleteAllChats); // Delete all chats
 
 module.exports = router;

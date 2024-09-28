@@ -69,44 +69,6 @@ exports.delete = async (req, res) => {
     }
 }
 
-exports.getListings = async (req, res) => {
-    try {
-        const listings = await db.Listing.findAll({
-            include: [
-                {
-                    model: db.User,
-                    attributes: ["id", "firstName", "lastName", "photo"],
-                },
-            ],
-            order: [["createdAt", "DESC"]],
-        });
-
-        const mappedListings = listings.map((listing) => {
-            const { id, title, description, company, location, salary, createdAt, User } = listing;
-            return {
-                id,
-                title,
-                description,
-                company,
-                location,
-                salary,
-                createdAt,
-                User: {
-                    id: User.id,
-                    firstName: User.firstName,
-                    lastName: User.lastName,
-                    photo: User.photo ? `data:image/jpeg;base64,${User.photo.toString('base64')}` : null,
-                },
-            };
-        });
-
-        res.status(200).json(mappedListings);
-    } catch (error) {
-        console.error("Error getting listings:", error);
-        res.status(500).json({ error: error.message });
-    }
-};
-
 exports.getApplicants = async (req, res) => {
     try {
         if (!req.params.id) {
@@ -227,9 +189,9 @@ const createMatrixFactorization = (interactionMatrix, numUsers, numListings, lat
             }
         }
 
-        if (step % 100 === 0) {
-            console.log(`Step: ${step}, Error: ${totalError}`);
-        }
+        // if (step % 100 === 0) {
+        //     console.log(`Step: ${step}, Error: ${totalError}`);
+        // }
     }
 
     return { U, P };
@@ -239,7 +201,7 @@ const createMatrixFactorization = (interactionMatrix, numUsers, numListings, lat
 getListings2(req, res)
 Η λειτουργία getListings2 είναι υπεύθυνη για την παροχή προτάσεων αγγελιών εργασίας σε έναν συγκεκριμένο χρήστη με βάση τόσο τις προηγούμενες αλληλεπιδράσεις του όσο και τις δραστηριότητες των φίλων του. Ο αλγόριθμος προτείνει αγγελίες με βάση έναν συνδυασμό Matrix Factorization και content-based filtering, εξασφαλίζοντας ότι οι προτάσεις είναι σχετικές και προσωποποιημένες. Αρχικά χρησιμοποιούμαι την μέθοδο createMatrixFactorization όπως και στην συνάρτηση getUserSuggestedPosts2(req, res) με την ίδια λογική "λαμβάνοντας υπόψη προβολές αγγελιών, αιτήσεις εργασίας, καθώς και προβολές και αιτήσεις φίλων", Τα προβλεπόμενα σκορ κανονικοποιούνται μεταξύ 0 και 1. Στο δεύτερο μέρος κάνουμε αναζήτηση βάσει περιεχομένου, η λειτουργία συγκρίνει το προφίλ του χρήστη, συμπεριλαμβανομένων των δεξιοτήτων του, της εκπαίδευσής του, και της επαγγελματικής του εμπειρίας, με τις περιγραφές των αγγελιών. Για κάθε λέξη-κλειδί που εμφανίζεται στην περιγραφή μιας αγγελίας, η λειτουργία αυξάνει το σκορ της συγκεκριμένης αγγελίας. Τα σκορ που προκύπτουν κανονικοποιούνται μεταξύ 0 και 1, δημιουργώντας ένα σύστημα βαθμολόγησης που αντικατοπτρίζει τη συνάφεια της αγγελίας με το προφίλ του χρήστη. Στο τέλος, η λειτουργία συνδυάζει τις κανονικοποιημένες βαθμολογίες από το Matrix Factorization και το content-based filtering με συγκεκριμένα βάρη (π.χ., a = 0.7 για Matrix Factorization και b = 0.3 για το content-based σκορ). Οι τελικές βαθμολογίες υπολογίζονται ως σταθμισμένα αθροίσματα των δύο αυτών σκορ. Οι αγγελίες κατατάσσονται με βάση την τελική τους βαθμολογία και επιστρέφονται οι κορυφαίες προτάσεις στον χρήστη.
 */
-exports.getListings2 = async (req, res) => {
+exports.getListings = async (req, res) => {
     try {
         const userId = req.user.id;
         const limit = req.body.limit ? parseInt(req.body.limit) : 10; // Limit the number of recommended listings, default is 10
@@ -315,7 +277,7 @@ exports.getListings2 = async (req, res) => {
 
         // Fetch listings viewed and applied by friends
         const friendViewedListings = await db.SeenListings.findAll({ where: { userId: friendIds } });
-        console.log(friendViewedListings.length)
+
         let friendAppliedListings = [];
         for (const friendId of friendIds) {
             const friendAppliedListingsData = await db.User.findByPk(friendId, {
@@ -368,7 +330,7 @@ exports.getListings2 = async (req, res) => {
             postId: post.id,
             score: predictedScores[index]
         }));
-        console.log(listingScores)
+
 
         // Normalize Matrix Factorization Scores between 0 and 1
         const maxMatrixFactorizationScore = Math.max(...listingScores.map(item => item.score));
@@ -410,7 +372,6 @@ exports.getListings2 = async (req, res) => {
             listingId: item.listingId,
             normalizedScore: maxScore > 0 ? item.score / maxScore : 0
         }));
-        // console.log(contentBasedScores)
 
         // // //
         // Part.3: Combine the Results

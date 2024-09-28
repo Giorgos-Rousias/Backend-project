@@ -339,13 +339,12 @@ exports.getAllPosts = async (req, res) => {
 	}
 };
 
-
-////////////////
-//
-////////////////
-
+/*
+createMatrixFactorization(interactionMatrix, numUsers, numPosts, latentFeatures, steps, alpha)
+Η λειτουργία createMatrixFactorization υλοποιεί τη μέθοδο Matrix Factorization χρησιμοποιώντας τον αλγόριθμο Stochastic Gradient Descent. Χρησιμοποιείται για τη βελτιστοποίηση του μητρώου αλληλεπίδρασης χρήστη-αντικειμένου (όπως οι αλληλεπιδράσεις χρήστη-δημοσίευσης) ώστε να δημιουργήσει λανθάνουσες διαστάσεις για τους χρήστες και τα αντικείμενα. Τα βελτιστοποιημένα μητρώα U και P χρησιμοποιούνται για την πρόβλεψη αλληλεπιδράσεων και την παροχή προτάσεων. Η διαδικασία περιλαμβάνει αρχικοποίηση των μητρώων χρηστών (U) και δημοσιεύσεων (P) με μικρές τυχαίες τιμές, και την εφαρμογή του αλγόριθμου Στοχαστικής Βαθμίδωσης για την προσαρμογή των τιμών αυτών ώστε να ελαχιστοποιηθεί το σφάλμα πρόβλεψης των αλληλεπιδράσεων. Ο αλγόριθμος εκτελείται για έναν καθορισμένο αριθμό βημάτων (steps) και ρυθμίζεται από την παράμετρο alpha (ρυθμός μάθησης). Το αποτέλεσμα είναι δύο μητρώα λανθάνουσων χαρακτηριστικών που μπορούν να χρησιμοποιηθούν για να προταθούν νέες δημοσιεύσεις στους χρήστες.
+*/
 const createMatrixFactorization = (interactionMatrix, numUsers, numPosts, latentFeatures = 10, steps = 1000, alpha = 0.002) => {
-    // Initialize user (U) and post (P) matrices with small random values
+    // Initialize user U and post P matrices with small random values
     let U = Array.from({ length: numUsers }, () => Array(latentFeatures).fill().map(() => Math.random() * 0.1));
     let P = Array.from({ length: numPosts }, () => Array(latentFeatures).fill().map(() => Math.random() * 0.1));
 
@@ -360,11 +359,7 @@ const createMatrixFactorization = (interactionMatrix, numUsers, numPosts, latent
                 if (interactionMatrix[i][j] > 0) {
                     // Predicted interaction by dot product of U[i] and P[j]
                     const predictedInteraction = U[i].reduce((sum, userFeature, k) => sum + userFeature * P[j][k], 0);
-
-                    // Calculate error
                     const error = interactionMatrix[i][j] - predictedInteraction;
-
-                    // Accumulate total error for logging
                     totalError += Math.pow(error, 2);
 
                     // Update U and P using Gradient Descent
@@ -375,23 +370,26 @@ const createMatrixFactorization = (interactionMatrix, numUsers, numPosts, latent
                 }
             }
         }
-
-        // Logging the error every 100 steps for monitoring
+        // Troubleshooting
         if (step % 100 === 0) {
             console.log(`Step: ${step}, Error: ${totalError}`);
         }
     }
 
-    // Return the optimized user (U) and post (P) matrices
+    // Return the optimized user U and post P matrices
     return { U, P };
 };
 
+/*
+getUserSuggestedPosts2(req, res)
+Η λειτουργία getUserSuggestedPosts2 παρέχει προτάσεις δημοσιεύσεων σε έναν συγκεκριμένο χρήστη με βάση τις προηγούμενες αλληλεπιδράσεις του καθώς και τις δραστηριότητες των φίλων του. Αρχικά, δημιουργείται ένα user-post interaction matrix που περιλαμβάνει likes, σχόλια και αλληλεπιδράσεις φίλων. Έπειτα εφαρμόζεται ο αλγόριθμός createMatrixFactorization ο για να βαθμολογήσει τα σκορ των posts. Κατατάσσουμε αυτά τα σκορ από το υψηλότερο στο χαμηλότερο και στέλνουμε n σύνολο από posts με τα μεγαλύτερα σκορ.
+*/
 exports.getUserSuggestedPosts = async (req, res) => {
     try {
         const userId = req.user.id;
         const limit = req.body.limit ? parseInt(req.body.limit) : 10; // Limit the number of recommended posts, default is 10
 
-        // Step 1: Create the full User-Post Interaction Matrix
+        // Create the full User-Post Interaction Matrix
         const users = await db.User.findAll(); // Fetch all users
         const posts = await db.Post.findAll(); // Fetch all posts
 
@@ -405,7 +403,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
         const multipleFriendInteractionWeight = 3;
 		const commentWeight = 4;
 
-        // Step 2: Populate Interaction Matrix with likes and comments from all users
+        // Populate Interaction Matrix with likes and comments from all users
         for (let userIndex = 0; userIndex < numUsers; userIndex++) {
             const currentUser = users[userIndex];
 
@@ -426,7 +424,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
             });
         }
 
-        // Step 3: Add friend interactions only for the target user (the one requesting recommendations)
+        // Add friend interactions only for the target user
         const targetUserIndex = users.findIndex(user => user.id === userId);
         const targetUserFriends = await db.UserFriends.findAll({ where: { userId: userId } });
         const friendIds = targetUserFriends.map(friend => friend.friendId);
@@ -455,27 +453,24 @@ exports.getUserSuggestedPosts = async (req, res) => {
             }
         });
 
-        // Step 4: Apply Matrix Factorization to the Interaction Matrix
-        const latentFeatures = 10; // Number of latent features for users and posts
-        const { U, P } = createMatrixFactorization(interactionMatrix, numUsers, numPosts, latentFeatures);
+        // Apply Matrix Factorization to the Interaction Matrix
+        const latentFeatures = 10;
+        const steps = 1000
+        const alpha = 0.002
+        const { U, P } = createMatrixFactorization(interactionMatrix, numUsers, numPosts, latentFeatures, steps, alpha);
 
-        // Step 5: Predict Scores for the Target User
+        // Predict Scores for the Target User
         const predictedScores = P.map(postFeatures =>
             U[targetUserIndex].reduce((sum, userFeature, index) => sum + userFeature * postFeatures[index], 0)
         );
 
-        // Step 6: Combine posts with their predicted scores
+        // Step 6: Combine, Sort, Limit posts with their predicted scores
         const postScores = posts.map((post, index) => ({
             postId: post.id,
             score: predictedScores[index]
         }));
-
-        // Step 7: Sort posts by predicted scores in descending order
         postScores.sort((a, b) => b.score - a.score);
-
-        // Step 8: Limit the number of posts and fetch post details
-        // const topPostScores = postScores.slice(0, limit);
-        const topPostScores = postScores;
+        const topPostScores = postScores.slice(0, limit);
         const topPostIds = topPostScores.map(p => p.postId);
 
         const topPosts = await db.Post.findAll({
@@ -489,7 +484,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 			}]
         });
 
-        // Step 9: Format the response to match the previous version
+        // Format the response to match the previous version
         const recommendedPosts = topPosts.map(post => {
             let returnFile = null;
             if (post.file) {
@@ -516,6 +511,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
                 lastName: post.User.lastName,
                 photo: returnUserPhoto,
 				likedByUser: post.Likes.some(like => like.userId === userId)
+
             };
         });
 
@@ -527,11 +523,15 @@ exports.getUserSuggestedPosts = async (req, res) => {
     }
 };
 
+/*
+dummyDataGenerator(req, res)
+Η λειτουργία dummyDataGenerator δημιουργεί ψευδοδεδομένα για δοκιμές. Δημιουργεί νέους χρήστες, φίλους, δημοσιεύσεις, likes, σχόλια, αγγελίες εργασίας, αιτήσεις, δεξιότητες, εκπαίδευση, και εμπειρία για να προσομοιώσει πραγματικές αλληλεπιδράσεις στην πλατφόρμα. Κάθε προφίλ χρήστη γεμίζεται με περιστασιακά ρεαλιστικά, τυχαία δεδομένα, ώστε η εφαρμογή να διαθέτει επαρκές περιεχόμενο για δοκιμές του συστήματος συστάσεων και άλλων λειτουργιών.
+*/
 exports.dummyDataGenerator = async (req, res) => {
 	try {
 		const hashedPassword = await bcrypt.hash("1234", 10); 
 		
-		const newUsers = 30;
+		const newUsers = 40;
 		for (let i = 0; i < newUsers; i++) {
 			await db.User.create({
 				firstName: faker.person.firstName(),
@@ -605,7 +605,7 @@ exports.dummyDataGenerator = async (req, res) => {
 						let maxPost = 4;
 						let minPost = 0;
 						const randomNumPosts = Math.floor(Math.random() * (maxPost - minPost + 1)) + minPost;
-						const randomPosts = getRandomNumbersWithDuplicatesRemoved(randomNumPosts, 0, 150, -1);
+						const randomPosts = getRandomNumbersWithDuplicatesRemoved(randomNumPosts, 0, 10, -1);
 
 						for (const id of randomPosts) {
 							await db.Post.create({
@@ -674,7 +674,7 @@ exports.dummyDataGenerator = async (req, res) => {
 							await db.Listing.create({
 								userId,
 								title: faker.person.jobTitle(),
-								description: faker.lorem.paragraph(),
+								description: jobDescriptions[Math.floor(Math.random() * jobDescriptions.length)],
 								location: faker.location.city(),
 								company: faker.company.name(),
 								salary: faker.finance.amount()
@@ -687,31 +687,31 @@ exports.dummyDataGenerator = async (req, res) => {
 
 				// Create Applications
 				const createApplications = async (user) => {
-					try {
-						const jobListings = await db.Listing.findAll();
-						if (!jobListings || jobListings.length === 0) return;
-						console.log(jobListings.length);
+                    try {
+                        const jobListings = await db.Listing.findAll();
+                        if (!jobListings || jobListings.length === 0) return;
+                        console.log(jobListings.length);
 
-						const maxApplications = 4;
-						const minApplications = 0;
-						const randomNumApplications = Math.floor(Math.random() * (maxApplications - minApplications + 1)) + minApplications;
-						const appliedListings = new Set();
+                        const maxApplications = 4;
+                        const minApplications = 0;
+                        const randomNumApplications = Math.floor(Math.random() * (maxApplications - minApplications + 1)) + minApplications;
+                        const appliedListings = new Set();
 
-						for (let i = 0; i < randomNumApplications; i++) {
-							const randomJobListing = jobListings[Math.floor(Math.random() * jobListings.length)];
-							
-							if (appliedListings.has(randomJobListing.id)){
-								console.log("Duplicate application");
-								continue;
-							}
+                        for (let i = 0; i < randomNumApplications; i++) {
+                            const randomJobListing = jobListings[Math.floor(Math.random() * jobListings.length)];
+                            
+                            if (appliedListings.has(randomJobListing.id)){
+                                console.log("Duplicate application");
+                                continue;
+                            }
 
-							appliedListings.add(randomJobListing.id);
-							await user.addAppliedToListing(randomJobListing);
-						}
-					} catch (error) {
-						console.log("Error creating applications: ", error);
-					}
-				};
+                            appliedListings.add(randomJobListing.id);
+                            await user.addAppliedToListing(randomJobListing);
+                        }
+                    } catch (error) {
+                        console.log("Error creating applications: ", error);
+                    }
+                };
 
 				// Create Skills
 				const createSkills = async (userId) => {
@@ -722,7 +722,7 @@ exports.dummyDataGenerator = async (req, res) => {
 						for (let i = 0; i < randomNumSkills; i++) {
 							await db.Skill.create({
 								userId,
-								skill: faker.lorem.word(),
+								skill: skillsList[Math.floor(Math.random() * skillsList.length)],
 								description: faker.lorem.sentence()
 							});
 						}
@@ -773,44 +773,44 @@ exports.dummyDataGenerator = async (req, res) => {
 				};
 
 				const createSeeListings = async (user) => {
-					try {
-						let maxSeeListings = 4;
-						let minSeeListings = 2;
-						const randomNumSeeListings = Math.floor(Math.random() * (maxSeeListings - minSeeListings + 1)) + minSeeListings;
+                    try {
+                        let maxSeeListings = 4;
+                        let minSeeListings = 2;
+                        const randomNumSeeListings = Math.floor(Math.random() * (maxSeeListings - minSeeListings + 1)) + minSeeListings;
 
-						const numberOfListings = await db.Listing.count();
+                        const numberOfListings = await db.Listing.count();
 
-						const randomListings = getRandomNumbersWithDuplicatesRemoved(randomNumSeeListings, 1, numberOfListings, -1);
+                        const randomListings = getRandomNumbersWithDuplicatesRemoved(randomNumSeeListings, 1, numberOfListings, -1);
 
-						for (const id of randomListings) {
-							const listing = await db.Listing.findByPk(id);
-							if (!listing) {
-								continue;
-							}
+                        for (const id of randomListings) {
+                            const listing = await db.Listing.findByPk(id);
+                            if (!listing) {
+                                continue;
+                            }
 
-							const alreadySeen = await user.hasSeen(listing);
-							if (alreadySeen) {
-								continue;
-							}
+                            const alreadySeen = await user.hasSeen(listing);
+                            if (alreadySeen) {
+                                continue;
+                            }
 
-							await user.addSeen(listing);
-						}
-					} catch (error) {
-						console.log("Error creating see listing: ", error);
-					}
-				};
+                            await user.addSeen(listing);
+                        }
+                    } catch (error) {
+                        console.log("Error creating see listing: ", error);
+                    }
+                };
 
-				// Now calling each async function for the user in sequence
-				await createFriends(user.id);
-				await createPosts(user.id);
-				await createLikes(user.id);
-				await createComments(user.id);
-				await createJobListings(user.id);
-				await createApplications(user);
-				await createSkills(user.id);
-				await createEducation(user.id);
-				await createExperience(user.id);
-				await createSeeListings(user);
+                // Now calling each async function for the user in sequence
+                await createFriends(user.id);
+                await createPosts(user.id);
+                await createLikes(user.id);
+                await createComments(user.id);
+                await createJobListings(user.id);
+                await createApplications(user);
+                await createSkills(user.id);
+                await createEducation(user.id);
+                await createExperience(user.id);
+                await createSeeListings(user);
 			}
 		}
 
@@ -826,6 +826,7 @@ exports.dummyDataGenerator = async (req, res) => {
 	}
 };
 
+
 const postTexts = [
 	"Excited to connect with industry leaders and expand my professional network!",
 	"Attending a virtual conference on software development—great opportunity to learn and network!",
@@ -839,148 +840,77 @@ const postTexts = [
 	"Looking for a mentor in product management. Any recommendations?",
 	"How do you manage your work-life balance as a remote worker? Let's exchange tips!",
 	"Happy to announce I've joined a new team as a senior backend developer!",
-	"Networking isn’t just about business; it's about building meaningful relationships.",
-	"Anyone interested in a virtual coffee to discuss career growth in the tech industry?",
-	"Just finished an amazing course on leadership in tech teams. Highly recommend it!",
-	"How do you keep up with the latest trends in mobile app development?",
-	"Looking for a UI/UX designer to collaborate on a new app idea. Let's connect!",
-	"Professional development is a journey. Always excited to learn something new!",
-	"Preparing a workshop on modern web development. Would love feedback from the community.",
-	"Joining a webinar today on cybersecurity best practices. Anyone else attending?",
-	"The key to successful networking is genuine connections, not just business cards.",
-	"Just completed a challenging coding project—feeling accomplished!",
-	"Does anyone here have experience in blockchain development? Let's connect!",
-	"Looking for a co-founder for a new startup in the mobile app space.",
-	"Connecting with fellow developers to discuss the future of cloud-native apps.",
-	"Starting a new open-source project and looking for contributors. Interested?",
-	"Grateful to my mentors who helped me navigate the early stages of my career.",
-	"Anyone here focusing on developing apps with Flutter? Let's share ideas!",
-	"Reaching out to the community for advice on transitioning to a leadership role.",
-	"Networking tip: Always offer value before expecting something in return.",
-	"Excited to announce my promotion to Lead Software Engineer!",
-	"Starting a new blog series on building scalable mobile applications. Stay tuned!",
-	"Appreciating the power of networking as I continue to meet inspiring professionals.",
-	"Does anyone know a good tool for managing multiple projects efficiently?",
-	"Just signed up for a course on DevOps culture and automation. Can’t wait to start!",
-	"Let's talk about remote work productivity. What are your best strategies?",
-	"Looking for partnerships to develop an innovative professional networking app.",
-	"Had a great brainstorming session with fellow developers today!",
-	"Career advice: Never stop learning and evolving, even in your busiest times.",
-	"Networking tip: Always follow up with a personalized message after connecting.",
-	"Excited to be part of the upcoming hackathon! Anyone else participating?",
-	"Starting a mentorship program for junior developers—feel free to join!",
-	"How do you stay motivated in the constantly evolving tech industry?",
-	"Feeling inspired after a great conversation with a mentor on career progression.",
-	"Offering free consultations on mobile app development strategies. Let’s connect!",
-	"What's the best way to find remote job opportunities in tech?",
-	"Celebrating small wins today—completed the MVP for a new project!",
-	"Looking for advice on how to pitch a startup idea to investors.",
-	"Connecting with other professionals in AI and data science—exciting conversations!",
-	"What’s your go-to strategy for growing your professional network effectively?",
-	"Attending a webinar on the future of cloud infrastructure. Anyone joining?",
-	"Excited to announce I’ll be speaking at the next tech conference on AI.",
-	"Looking for feedback on my latest GitHub repository—open to suggestions!",
-	"How do you manage large-scale cloud migrations? Would love to learn more.",
-	"Starting a new side project focused on improving developer productivity.",
-	"Looking forward to meeting new connections at the upcoming industry meetup!",
-	"Just wrapped up an amazing hackathon—feeling energized and inspired!",
-	"Exploring career opportunities in data science. Anyone hiring?",
-	"Sharing tips on how to stay organized while managing multiple coding projects.",
-	"Looking for resources to learn more about serverless architecture. Any recommendations?",
-	"Just launched a new app on the App Store—excited to share it with the community!",
-	"How do you stay focused while working remotely? Let's discuss strategies.",
-	"Collaborating with a global team on an exciting blockchain project. Let's connect!",
-	"Offering pro bono mentorship for aspiring software developers. Reach out!",
-	"Attending a bootcamp on advanced JavaScript techniques—can't wait to apply my learnings!",
-	"Looking for recommendations for online communities focused on DevOps.",
-	"Just got certified in AWS cloud architecture. Ready to take on new challenges!",
-	"Preparing a talk on innovation in mobile app development. Would love feedback!",
-	"Anyone here working on machine learning for healthcare? Let's exchange ideas!",
-	"Just joined a mastermind group focused on leadership in tech—great experience so far!",
-	"Looking for co-founders for an exciting new fintech startup. Interested?",
-	"How do you keep up with the ever-evolving cybersecurity landscape? Let's talk.",
-	"Excited to connect with entrepreneurs focused on social impact tech startups.",
-	"Just completed an online course on Python automation. Highly recommend it!",
-	"Looking for guest bloggers for my tech blog—anyone interested?",
-	"Attending a virtual networking event tonight. Who else is coming?",
-	"How do you balance learning new technologies while managing your day-to-day work?",
-	"Feeling inspired after reading about breakthrough innovations in AI.",
-	"Excited to connect with industry leaders and expand my professional network!",
-	"Attending a virtual conference on software development—great opportunity to learn and network!",
-	"Looking for collaborators on an exciting new app development project. Who's interested?",
-	"Just published my latest blog post on the future of cloud computing. Let's discuss!",
-	"Does anyone have experience with scaling agile teams? I'd love to connect and chat.",
-	"Networking tip: Follow up with your connections after meeting at a conference or event!",
-	"Hiring talented full-stack developers. Drop your CV or reach out directly!",
-	"Looking forward to presenting at next week's tech meetup on microservices architecture.",
-	"Taking the next step in my career by learning more about AI and machine learning.",
-	"Looking for a mentor in product management. Any recommendations?",
-	"How do you manage your work-life balance as a remote worker? Let's exchange tips!",
-	"Happy to announce I've joined a new team as a senior backend developer!",
-	"Networking isn’t just about business; it's about building meaningful relationships.",
-	"Anyone interested in a virtual coffee to discuss career growth in the tech industry?",
-	"Just finished an amazing course on leadership in tech teams. Highly recommend it!",
-	"How do you keep up with the latest trends in mobile app development?",
-	"Looking for a UI/UX designer to collaborate on a new app idea. Let's connect!",
-	"Professional development is a journey. Always excited to learn something new!",
-	"Preparing a workshop on modern web development. Would love feedback from the community.",
-	"Joining a webinar today on cybersecurity best practices. Anyone else attending?",
-	"The key to successful networking is genuine connections, not just business cards.",
-	"Just completed a challenging coding project—feeling accomplished!",
-	"Does anyone here have experience in blockchain development? Let's connect!",
-	"Looking for a co-founder for a new startup in the mobile app space.",
-	"Connecting with fellow developers to discuss the future of cloud-native apps.",
-	"Starting a new open-source project and looking for contributors. Interested?",
-	"Grateful to my mentors who helped me navigate the early stages of my career.",
-	"Anyone here focusing on developing apps with Flutter? Let's share ideas!",
-	"Reaching out to the community for advice on transitioning to a leadership role.",
-	"Networking tip: Always offer value before expecting something in return.",
-	"Excited to announce my promotion to Lead Software Engineer!",
-	"Starting a new blog series on building scalable mobile applications. Stay tuned!",
-	"Appreciating the power of networking as I continue to meet inspiring professionals.",
-	"Does anyone know a good tool for managing multiple projects efficiently?",
-	"Just signed up for a course on DevOps culture and automation. Can’t wait to start!",
-	"Let's talk about remote work productivity. What are your best strategies?",
-	"Looking for partnerships to develop an innovative professional networking app.",
-	"Had a great brainstorming session with fellow developers today!",
-	"Career advice: Never stop learning and evolving, even in your busiest times.",
-	"Networking tip: Always follow up with a personalized message after connecting.",
-	"Excited to be part of the upcoming hackathon! Anyone else participating?",
-	"Starting a mentorship program for junior developers—feel free to join!",
-	"How do you stay motivated in the constantly evolving tech industry?",
-	"Feeling inspired after a great conversation with a mentor on career progression.",
-	"Offering free consultations on mobile app development strategies. Let’s connect!",
-	"What's the best way to find remote job opportunities in tech?",
-	"Celebrating small wins today—completed the MVP for a new project!",
-	"Looking for advice on how to pitch a startup idea to investors.",
-	"Connecting with other professionals in AI and data science—exciting conversations!",
-	"What’s your go-to strategy for growing your professional network effectively?",
-	"Attending a webinar on the future of cloud infrastructure. Anyone joining?",
-	"Excited to announce I’ll be speaking at the next tech conference on AI.",
-	"Looking for feedback on my latest GitHub repository—open to suggestions!",
-	"How do you manage large-scale cloud migrations? Would love to learn more.",
-	"Starting a new side project focused on improving developer productivity.",
-	"Looking forward to meeting new connections at the upcoming industry meetup!",
-	"Just wrapped up an amazing hackathon—feeling energized and inspired!",
-	"Exploring career opportunities in data science. Anyone hiring?",
-	"Sharing tips on how to stay organized while managing multiple coding projects.",
-	"Looking for resources to learn more about serverless architecture. Any recommendations?",
-	"Just launched a new app on the App Store—excited to share it with the community!",
-	"How do you stay focused while working remotely? Let's discuss strategies.",
-	"Collaborating with a global team on an exciting blockchain project. Let's connect!",
-	"Offering pro bono mentorship for aspiring software developers. Reach out!",
-	"Attending a bootcamp on advanced JavaScript techniques—can't wait to apply my learnings!",
-	"Looking for recommendations for online communities focused on DevOps.",
-	"Just got certified in AWS cloud architecture. Ready to take on new challenges!",
-	"Preparing a talk on innovation in mobile app development. Would love feedback!",
-	"Anyone here working on machine learning for healthcare? Let's exchange ideas!",
-	"Just joined a mastermind group focused on leadership in tech—great experience so far!",
-	"Looking for co-founders for an exciting new fintech startup. Interested?",
-	"How do you keep up with the ever-evolving cybersecurity landscape? Let's talk.",
-	"Excited to connect with entrepreneurs focused on social impact tech startups.",
-	"Just completed an online course on Python automation. Highly recommend it!",
-	"Looking for guest bloggers for my tech blog—anyone interested?",
-	"Attending a virtual networking event tonight. Who else is coming?",
-	"How do you balance learning new technologies while managing your day-to-day work?",
-	"Feeling inspired after reading about breakthrough innovations in AI."
+];
+
+const skillsList = [
+	"JavaScript",
+	"Python",
+	"Data analysis with Python and R",
+	"Project management and agile methodologies",
+	"Web development with HTML, CSS, and React",
+	"Database management with SQL and NoSQL",
+	"SQL",
+	"Cloud computing with AWS and Azure",
+	"Machine learning",
+	"AI",
+	"UI/UX designer",
+	"DevOps and CI/CD pipeline setup",
+	"Networking and cybersecurity basics",
+	"Mobile application development",
+	"junior developer",
+	"SEO",
+	"Business analysis",
+	"Software testing and quality assurance",
+	"API design and integration with RESTful services",
+    "DevOps",
+    "Jenkins",
+    "GitLab CI",
+    "Docker",
+    "Node.js",
+    "Kubernetes",
+    "Flutter",
+    "Agile",
+    "SEO",
+    "Testing",
+    "Tableau",
+    "Flask",
+    "Java",
+    "Leadership",
+    "RPA",
+    "Data Analysis",
+    "Cybersecurity",
+    "Prototyping",
+    "REST APIs",
+    "Scalability"
+];
+
+const jobDescriptions = [
+    "Develop and maintain high-quality web applications using JavaScript, React, and modern frameworks. Collaborate with designers and back-end developers to create a seamless user experience, ensuring responsive design and cross-browser compatibility.",
+    "Collaborate with cross-functional teams, including product owners, designers, and engineers, to gather requirements and deliver scalable software solutions. Participate in code reviews, ensure adherence to best practices, and mentor junior developers.",
+    "Design and implement efficient data storage solutions using SQL and NoSQL databases. Optimize database performance, write complex queries, and ensure data integrity across multiple environments. Work closely with the engineering team to ensure robust and scalable solutions.",
+    "Manage cloud infrastructure and deploy services using AWS or Azure. Automate infrastructure provisioning and maintenance tasks using Infrastructure as Code (IaC) tools like Terraform. Ensure high availability, scalability, and security of cloud-based applications.",
+    "Create engaging UI/UX designs, conduct user testing, and iterate based on feedback to improve usability. Develop wireframes, prototypes, and visual designs using tools such as Figma or Sketch. Work closely with front-end developers to bring designs to life.",
+    "Develop machine learning models to solve complex business problems, and integrate them into existing applications. Analyze large datasets to extract insights, create predictive models, and evaluate model performance. Collaborate with data engineers to deploy models in production environments.",
+    "Lead project teams through agile processes to ensure on-time delivery of features. Facilitate daily stand-ups, sprint planning, and retrospective meetings. Identify risks and roadblocks, and develop strategies to mitigate them while ensuring stakeholder alignment.",
+    "Write unit and integration tests to ensure the stability and quality of applications. Utilize tools such as Jest, Mocha, and Selenium to create automated test scripts. Collaborate with QA engineers to identify potential issues and verify fixes in the development process.",
+    "Design and maintain CI/CD pipelines to streamline software delivery. Set up automated builds, tests, and deployments using Jenkins, GitLab CI, or similar tools. Work closely with development teams to implement continuous integration and deployment best practices.",
+    "Provide technical support and training for internal and external stakeholders. Develop technical documentation, create user guides, and conduct workshops to ensure users are comfortable with software products. Work closely with the customer support team to address and resolve technical issues.",
+    "Design and implement scalable microservices using Node.js or Java. Develop RESTful APIs, integrate third-party services, and ensure that the microservices architecture is highly available and fault-tolerant. Monitor system performance and make improvements where necessary.",
+    "Drive digital transformation initiatives, focusing on automation, efficiency, and customer experience. Analyze business processes, identify bottlenecks, and recommend solutions to improve overall productivity. Work with multiple teams to successfully implement process improvements.",
+    "Lead the design and development of a mobile application using frameworks such as Flutter or React Native. Implement user authentication, manage state effectively, and optimize the app for different devices and screen sizes. Ensure high performance and smooth animations.",
+    "Develop comprehensive cybersecurity strategies to protect applications and data. Perform security assessments, vulnerability scans, and penetration testing. Educate development teams about secure coding practices, and establish protocols to respond to security incidents.",
+    "Participate in the design, architecture, and development of large-scale distributed systems. Ensure that applications are built to handle significant growth and scalability requirements. Collaborate with infrastructure engineers to design robust, high-performance systems.",
+    "Oversee end-to-end delivery of complex software projects, from initial concept to deployment. Prepare project plans, allocate resources, and manage timelines. Maintain regular communication with stakeholders, providing updates on project status, risks, and issues.",
+    "Create digital marketing campaigns aimed at enhancing brand visibility and customer engagement. Utilize SEO, content marketing, and PPC to attract and retain customers. Analyze campaign performance metrics and optimize strategies for maximum effectiveness.",
+    "Work closely with product managers to define and prioritize features. Create detailed user stories, acceptance criteria, and flow diagrams to capture requirements. Ensure that features align with business goals, and provide valuable feedback during feature development.",
+    "Develop scalable backend services using Python and Flask, integrating with third-party APIs to extend the application's capabilities. Create automated scripts for data migration and transformation, ensuring that the system remains robust and efficient.",
+    "Lead a team of junior developers, providing code reviews, mentorship, and technical guidance. Ensure the team adheres to coding standards, keeps up with modern development trends, and delivers high-quality software that meets business requirements.",
+    "Coordinate with marketing and sales teams to strategize and execute product launches. Develop marketing collateral, participate in customer interviews, and perform competitive analysis to ensure successful market positioning.",
+    "Manage software deployments and oversee the release process in a production environment. Collaborate with QA teams for final sign-offs and ensure rollback plans are in place. Handle production issues swiftly, ensuring minimum downtime.",
+    "Conduct market research to identify customer needs and analyze competitor offerings. Provide insights to the product team to influence the product roadmap. Prepare reports on market trends and customer feedback.",
+    "Implement automated workflows using robotic process automation (RPA) tools. Identify repetitive business tasks, design automation scripts, and work with business units to ensure smooth integration of automated processes.",
+    "Analyze performance metrics to measure software efficiency. Utilize data visualization tools such as Power BI or Tableau to present metrics to stakeholders. Work with developers to optimize underperforming areas of the software.",
+    "Perform server-side logic and manage databases to ensure efficient application performance. Handle integrations with third-party services, and optimize server usage for scalability.",
+    "Create and manage product documentation, including user manuals and technical specifications. Work with developers to ensure that all product features are documented correctly, providing clear instructions for end users.",
+    "Develop front-end code that meets WCAG accessibility standards to ensure web applications are accessible to all users, including those with disabilities. Collaborate with UX designers to implement visually appealing and compliant user interfaces."
 ];

@@ -379,8 +379,8 @@ const createMatrixFactorization = (interactionMatrix, numUsers, numPosts, latent
 };
 
 /*
-getUserSuggestedPosts2(req, res)
-Η λειτουργία getUserSuggestedPosts2 παρέχει προτάσεις δημοσιεύσεων σε έναν συγκεκριμένο χρήστη με βάση τις προηγούμενες αλληλεπιδράσεις του καθώς και τις δραστηριότητες των φίλων του. Αρχικά, δημιουργείται ένα user-post interaction matrix που περιλαμβάνει likes, σχόλια και αλληλεπιδράσεις φίλων. Έπειτα εφαρμόζεται ο αλγόριθμός createMatrixFactorization ο για να βαθμολογήσει τα σκορ των posts. Κατατάσσουμε αυτά τα σκορ από το υψηλότερο στο χαμηλότερο και στέλνουμε n σύνολο από posts με τα μεγαλύτερα σκορ.
+getUserSuggestedPosts(req, res)
+Η λειτουργία getUserSuggestedPosts παρέχει προτάσεις δημοσιεύσεων σε έναν συγκεκριμένο χρήστη με βάση τις προηγούμενες αλληλεπιδράσεις του καθώς και τις δραστηριότητες των φίλων του. Αρχικά, δημιουργείται ένα user-post interaction matrix που περιλαμβάνει likes, σχόλια και αλληλεπιδράσεις φίλων. Έπειτα εφαρμόζεται ο αλγόριθμός createMatrixFactorization ο για να βαθμολογήσει τα σκορ των posts. Κατατάσσουμε αυτά τα σκορ από το υψηλότερο στο χαμηλότερο και στέλνουμε n σύνολο από posts με τα μεγαλύτερα σκορ.
 */
 exports.getUserSuggestedPosts = async (req, res) => {
     try {

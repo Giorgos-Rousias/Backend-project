@@ -103,6 +103,9 @@ const db = {
 
 (async () => {
 	try {
+		await sequelize.sync({ alter: true });
+
+
 		const admin = await User.findOne({
 			where: {
 				email: 'admin@admin.com',

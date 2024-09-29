@@ -21,7 +21,7 @@ app.use(cors());
 
 // Add routes
 app.use("/users", userRoutes);
-app.use("/auth", authRoutes); // Mount authentication routes
+app.use("/auth", authRoutes);
 app.use("/userInfo", userInfoRoutes);
 app.use("/friends", friendlistRoutes);
 app.use("/posts", postRoutes);

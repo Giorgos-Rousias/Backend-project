@@ -11,12 +11,12 @@ exports.create = async (req, res) => {
     
         // Create new experience for the user
         const experience = await db.Experience.create({
-          company,
-          role,
-          startYear,
-          endYear,
-          userId, // Associate the experience with the correct user
-          isPrivate,
+            company,
+            role,
+            startYear,
+            endYear,
+            userId, // Associate the experience with the correct user
+            isPrivate,
         });
     
         res.status(201).json(experience);
@@ -45,9 +45,9 @@ exports.getExperience = async (req, res) => {
         // Handle errors properly
         if (!res.headersSent) {
         // Check if headers are already sent
-        res
-            .status(500)
-            .json({ message: "Error fetching experience", error: error.message });
+            res
+                .status(500)
+                .json({ message: "Error fetching experience", error: error.message });
         }
     }
 };

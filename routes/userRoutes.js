@@ -6,7 +6,7 @@ const userController = require("../controllers/userController");
 // Route to get all users
 
 // Route to get all users without photo
-router.get("/noPhoto", userController.getUsersWithoutPhoto);
+// router.get("/noPhoto", userController.getUsersWithoutPhoto); // For testing purposes
 
 const authenticateToken = require("../middlewares/authMiddleware");
 

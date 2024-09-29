@@ -32,7 +32,6 @@ exports.sendFriendRequest = async (req, res) => {
 
     if (existingFriendship) {
       existingFriendship.destroy();
-      // return res.status(400).json({ message: "Friend request already sent" });
     }
 
     // Create a new friend request with status 'pending'

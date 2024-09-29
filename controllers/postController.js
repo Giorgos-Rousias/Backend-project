@@ -165,7 +165,7 @@ exports.getUserSuggestedPosts = async (req, res) => {
 
 		// Remove duplicates
 		suggestedPosts = suggestedPosts.filter((post, index, self) => 
-			index === self.findIndex((p) => p.id === post.id)  // Assuming `id` is the unique property
+			index === self.findIndex((p) => p.id === post.id)
 		);
 
 		suggestedPosts.sort((a, b) => b.createdAt - a.createdAt);

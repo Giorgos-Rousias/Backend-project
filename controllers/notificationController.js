@@ -198,7 +198,6 @@ exports.deleteNotification = async (req, res) => {
 
 exports.deleteAllNotifications = async (req, res) => {
     try {
-        // await db.Notification.destroy();
         const notifications = await db.Notification.findAll();
         await Promise.all(notifications.map(async (notification) => {
             await notification.destroy();

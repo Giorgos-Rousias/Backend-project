@@ -26,7 +26,7 @@ const UserFriends = sequelize.define("UserFriends", {
     onDelete: "CASCADE",
   },
   status: {
-    type: DataTypes.STRING, // E.g., 'pending', 'accepted', 'rejected'
+    type: DataTypes.STRING,
     defaultValue: "pending", // Default to 'pending' when a request is made
     validate: {
       isIn: [["pending", "accepted"]],

@@ -162,9 +162,6 @@ exports.getUserChats = async (req, res) => {
             const user1 = await db.User.findByPk(chat.userId1);
             const user2 = await db.User.findByPk(chat.userId2);
 
-            // console.log(user1);
-            // console.log(user2);
-
             return {
                 id: chat.id,
                 user1Id: chat.userId1,
@@ -191,7 +188,6 @@ exports.getUserChats = async (req, res) => {
 exports.getAllChats = async (req, res) => {
     try {
         const chats = await db.Chat.findAll();
-        // const chats = await db.Chat.findOne();
         res.status(200).json(chats);
     } catch (error) {
         console.error("Error getting all chats:", error);

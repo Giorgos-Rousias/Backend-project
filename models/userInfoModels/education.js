@@ -31,6 +31,4 @@ const Education = sequelize.define(
   }
 );
 
-// Education.belongsTo(User, { foreignKey: "userId" });
-
 module.exports = Education;

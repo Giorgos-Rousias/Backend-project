@@ -6,7 +6,7 @@ const authenticateToken = require('../middlewares/authMiddleware');
 router.delete('/', notificationController.deleteAllNotifications);
 
 router.get('/', authenticateToken, notificationController.getNotifications);
-router.put('/:id/', authenticateToken, notificationController.markAsRead);
+// router.put('/:id/', authenticateToken, notificationController.markAsRead); // unused
 router.delete('/:id/', authenticateToken, notificationController.deleteNotification);
 
 

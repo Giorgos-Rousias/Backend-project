@@ -2,6 +2,8 @@ const db = require("../models");
 const determineFileCategory = require("../middlewares/determineFileTypeMiddleware");
 const { Op, fn, col } = require("sequelize");
 const createNotification = require("./notificationController").createNotification;
+const { faker } = require('@faker-js/faker');
+const bcrypt = require("bcryptjs");
 
 exports.createPost = async (req, res) => {
 	try {
@@ -56,154 +58,6 @@ exports.createPost = async (req, res) => {
 		res.status(200).json(response);
 	} catch (error) {
 		console.error("Error creating post:", error);
-		res.status(500).json({ error: error.message });
-	}
-};
-
-exports.getUserSuggestedPosts = async (req, res) => {
-	try {
-		const userId = req.user.id;
-
-		const numberOfPosts = req.body.numberOfPosts ? req.body.numberOfPosts : 3; // Default to 10 posts
-		const date = req.body.lastPostDate ? new Date(req.body.lastPostDate) : new Date(); // Default to current date
-
-		let suggestedPosts = [];
-
-		const user = await db.User.findByPk(userId);
-
-		if (!user) {
-			return res.status(404).json({ error: "User not found" });
-		}
-
-		// Get the user's posts
-		const userPosts = await db.Post.findAll({
-			where: {
-				creatorUserId: userId,
-				createdAt: {
-					[Op.lt]: date,
-				},
-			},
-			order: [["createdAt", "DESC"]],
-			include: {
-				model: db.User,
-				attributes: ["firstName", "lastName", "photo"],
-			},
-		});
-
-		suggestedPosts = suggestedPosts.concat(userPosts);
-
-		const friends = await db.UserFriends.findAll({
-			where: {
-				userId: userId,
-			},
-		});
-
-		if (friends) {
-			const friendIds = friends.map((friend) => friend.friendId);
-
-			const friendPosts = await db.Post.findAll({
-				where: {
-					creatorUserId: friendIds,
-					createdAt: {
-						[Op.lt]: date,
-					},
-				},
-				include: {
-					model: db.User,
-					attributes: ["firstName", "lastName" , "photo"],
-				},
-				order: [["createdAt", "DESC"]],
-				limit: numberOfPosts,
-			});
-
-			suggestedPosts = suggestedPosts.concat(friendPosts);
-
-			const friendLikedPosts = await db.Post.findAll({
-				include: [{
-					model: db.Like,
-					where: {
-						userId: friendIds,
-					},
-					required: true,
-					attributes: [],
-				}, {
-					model: db.User,
-					attributes: ["firstName", "lastName" , "photo"],
-				}],
-				where: {
-					createdAt: {
-						[Op.lt]: date,
-				}},
-				order: [["createdAt", "DESC"]],
-				limit: numberOfPosts,
-			});
-
-			suggestedPosts = suggestedPosts.concat(friendLikedPosts);
-
-			const friendCommentedPosts = await db.Post.findAll({
-				include: [{
-					model: db.Comment,
-					where: {
-						userId: friendIds,
-					},
-					required: true,
-					attributes: [],
-				}, {
-					model: db.User,
-					attributes: ["firstName", "lastName" , "photo"],
-				}],
-				where: {
-					createdAt: {
-						[Op.lt]: date,
-				}},
-				order: [["createdAt", "DESC"]],
-				limit: numberOfPosts,
-			});
-
-			suggestedPosts = suggestedPosts.concat(friendCommentedPosts);
-		}
-
-		// Remove duplicates
-		suggestedPosts = suggestedPosts.filter((post, index, self) => 
-			index === self.findIndex((p) => p.id === post.id)
-		);
-
-		suggestedPosts.sort((a, b) => b.createdAt - a.createdAt);
-		suggestedPosts = suggestedPosts.slice(0, numberOfPosts);
-
-		const returnPosts = suggestedPosts.map((post) => {
-			let returnFile = null;
-			if (post.file) {
-				if (post.fileType === "video") {
-					returnFile = `data:video/mp4;base64,${post.file.toString('base64')}`;
-				} else if (post.fileType === "audio") {
-					returnFile = `data:audio/mp3;base64,${post.file.toString('base64')}`;
-				} else {
-					returnFile = `data:image/jpeg;base64,${post.file.toString('base64')}`;
-				}
-			}
-
-			// Process the user photo the same way
-			const returnUserPhoto = post.User.photo
-				? `data:image/jpeg;base64,${post.User.photo.toString('base64')}`
-				: null;
-			
-			return {
-				id: post.id,
-				text: post.text,
-				fileType: post.fileType,  // The fileType should be something like 'image', 'video', or 'audio'
-				file: returnFile,         // The base64 data URI for the media file
-				userId: post.User.id,
-				firstName: post.User.firstName,
-				lastName: post.User.lastName,
-				photo: returnUserPhoto,   // The base64 data URI for the user's profile photo
-			};
-		});
-
-		res.status(200).json(returnPosts);
-
-	} catch (error) {
-		console.error("Error getting suggested posts:", error);
 		res.status(500).json({ error: error.message });
 	}
 };
@@ -297,7 +151,7 @@ exports.likePost = async (req, res) => {
 		await createNotification(
 			post.creatorUserId,
 			"like",
-			newLike.id,
+			post.id,
 			`${user.firstName} ${user.lastName} liked your post`,
 		);
 
@@ -341,8 +195,6 @@ exports.createComment = async (req, res) => {
 		if (!user) {
 			return res.status(404).json({ error: "User not found" });
 		}
-
-		console.log(user);
 
 		if (!req.body.text) {
 			return res.status(400).json({ error: "You must provide text to create a comment" });
@@ -483,4 +335,189 @@ exports.getAllPosts = async (req, res) => {
 		console.error("Error getting all posts:", error);
 		res.status(500).json({ error: error.message });
 	}
+};
+
+/*
+createMatrixFactorization(interactionMatrix, numUsers, numPosts, latentFeatures, steps, alpha)
+Η λειτουργία createMatrixFactorization υλοποιεί τη μέθοδο Matrix Factorization χρησιμοποιώντας τον αλγόριθμο Stochastic Gradient Descent. Χρησιμοποιείται για τη βελτιστοποίηση του μητρώου αλληλεπίδρασης χρήστη-αντικειμένου (όπως οι αλληλεπιδράσεις χρήστη-δημοσίευσης) ώστε να δημιουργήσει λανθάνουσες διαστάσεις για τους χρήστες και τα αντικείμενα. Τα βελτιστοποιημένα μητρώα U και P χρησιμοποιούνται για την πρόβλεψη αλληλεπιδράσεων και την παροχή προτάσεων. Η διαδικασία περιλαμβάνει αρχικοποίηση των μητρώων χρηστών (U) και δημοσιεύσεων (P) με μικρές τυχαίες τιμές, και την εφαρμογή του αλγόριθμου Στοχαστικής Βαθμίδωσης για την προσαρμογή των τιμών αυτών ώστε να ελαχιστοποιηθεί το σφάλμα πρόβλεψης των αλληλεπιδράσεων. Ο αλγόριθμος εκτελείται για έναν καθορισμένο αριθμό βημάτων (steps) και ρυθμίζεται από την παράμετρο alpha (ρυθμός μάθησης). Το αποτέλεσμα είναι δύο μητρώα λανθάνουσων χαρακτηριστικών που μπορούν να χρησιμοποιηθούν για να προταθούν νέες δημοσιεύσεις στους χρήστες.
+*/
+const createMatrixFactorization = (interactionMatrix, numUsers, numPosts, latentFeatures = 10, steps = 1000, alpha = 0.002) => {
+    // Initialize user U and post P matrices with small random values
+    let U = Array.from({ length: numUsers }, () => Array(latentFeatures).fill().map(() => Math.random() * 0.1));
+    let P = Array.from({ length: numPosts }, () => Array(latentFeatures).fill().map(() => Math.random() * 0.1));
+
+    // Perform Stochastic Gradient Descent to optimize U and P matrices
+    for (let step = 0; step < steps; step++) {
+        let totalError = 0;
+
+        // Loop through each user and post
+        for (let i = 0; i < numUsers; i++) {
+            for (let j = 0; j < numPosts; j++) {
+                // Only consider non-zero interactions (where user interacted with the post)
+                if (interactionMatrix[i][j] > 0) {
+                    // Predicted interaction by dot product of U[i] and P[j]
+                    const predictedInteraction = U[i].reduce((sum, userFeature, k) => sum + userFeature * P[j][k], 0);
+                    const error = interactionMatrix[i][j] - predictedInteraction;
+                    totalError += Math.pow(error, 2);
+
+                    // Update U and P using Gradient Descent
+                    for (let k = 0; k < latentFeatures; k++) {
+                        U[i][k] += alpha * error * P[j][k];
+                        P[j][k] += alpha * error * U[i][k];
+                    }
+                }
+            }
+        }
+        // Troubleshooting
+        // if (step % 100 === 0) {
+        //     console.log(`Step: ${step}, Error: ${totalError}`);
+        // }
+    }
+
+    // Return the optimized user U and post P matrices
+    return { U, P };
+};
+
+/*
+getUserSuggestedPosts(req, res)
+Η λειτουργία getUserSuggestedPosts παρέχει προτάσεις δημοσιεύσεων σε έναν συγκεκριμένο χρήστη με βάση τις προηγούμενες αλληλεπιδράσεις του καθώς και τις δραστηριότητες των φίλων του. Αρχικά, δημιουργείται ένα user-post interaction matrix που περιλαμβάνει likes, σχόλια και αλληλεπιδράσεις φίλων. Έπειτα εφαρμόζεται ο αλγόριθμός createMatrixFactorization ο για να βαθμολογήσει τα σκορ των posts. Κατατάσσουμε αυτά τα σκορ από το υψηλότερο στο χαμηλότερο και στέλνουμε n σύνολο από posts με τα μεγαλύτερα σκορ.
+*/
+exports.getUserSuggestedPosts = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const limit = req.body.limit ? parseInt(req.body.limit) : 10; // Limit the number of recommended posts, default is 10
+
+        // Create the full User-Post Interaction Matrix
+        const users = await db.User.findAll(); // Fetch all users
+        const posts = await db.Post.findAll(); // Fetch all posts
+
+        const numUsers = users.length;
+        const numPosts = posts.length;
+
+        // Initialize interaction matrix (users x posts), setting all to 0 initially and weights
+        let interactionMatrix = Array(numUsers).fill(null).map(() => Array(numPosts).fill(0));
+		const singleFriendInteractionWeight = 1;
+        const likeWeight = 2;
+        const multipleFriendInteractionWeight = 3;
+		const commentWeight = 4;
+
+        // Populate Interaction Matrix with likes and comments from all users
+        for (let userIndex = 0; userIndex < numUsers; userIndex++) {
+            const currentUser = users[userIndex];
+
+            const likedPosts = await db.Like.findAll({ where: { userId: currentUser.id } });
+            likedPosts.forEach(like => {
+                const postIndex = posts.findIndex(post => post.id === like.postId);
+                if (postIndex !== -1) {
+                    interactionMatrix[userIndex][postIndex] += likeWeight;
+                }
+            });
+
+            const commentedPosts = await db.Comment.findAll({ where: { userId: currentUser.id } });
+            commentedPosts.forEach(comment => {
+                const postIndex = posts.findIndex(post => post.id === comment.postId);
+                if (postIndex !== -1) {
+                    interactionMatrix[userIndex][postIndex] += commentWeight;
+                }
+            });
+        }
+
+        // Add friend interactions only for the target user
+        const targetUserIndex = users.findIndex(user => user.id === userId);
+        const targetUserFriends = await db.UserFriends.findAll({ where: { userId: userId } });
+        const friendIds = targetUserFriends.map(friend => friend.friendId);
+        const friendLikedPosts = await db.Like.findAll({ where: { userId: friendIds } });
+        const friendCommentedPosts = await db.Comment.findAll({ where: { userId: friendIds } });
+
+        // Count interactions by friends on posts
+        let friendInteractionCount = {}; // Map of postId -> number of friends interacting
+        [...friendLikedPosts, ...friendCommentedPosts].forEach(friendInteraction => {
+            if (!friendInteractionCount[friendInteraction.postId]) {
+                friendInteractionCount[friendInteraction.postId] = 0;
+            }
+            friendInteractionCount[friendInteraction.postId] += 1;
+        });
+
+        // Apply weights based on the number of friends interacting with each post
+        Object.keys(friendInteractionCount).forEach(postId => {
+            const postIndex = posts.findIndex(post => post.id === parseInt(postId));
+            if (postIndex !== -1) {
+                const interactionCount = friendInteractionCount[postId];
+                if (interactionCount === 1) {
+                    interactionMatrix[targetUserIndex][postIndex] += singleFriendInteractionWeight;
+                } else if (interactionCount > 1) {
+                    interactionMatrix[targetUserIndex][postIndex] += multipleFriendInteractionWeight;
+                }
+            }
+        });
+
+        // Apply Matrix Factorization to the Interaction Matrix
+        const latentFeatures = 10;
+        const steps = 1000
+        const alpha = 0.002
+        const { U, P } = createMatrixFactorization(interactionMatrix, numUsers, numPosts, latentFeatures, steps, alpha);
+
+        // Predict Scores for the Target User
+        const predictedScores = P.map(postFeatures =>
+            U[targetUserIndex].reduce((sum, userFeature, index) => sum + userFeature * postFeatures[index], 0)
+        );
+
+        // Step 6: Combine, Sort, Limit posts with their predicted scores
+        const postScores = posts.map((post, index) => ({
+            postId: post.id,
+            score: predictedScores[index]
+        }));
+        postScores.sort((a, b) => b.score - a.score);
+        // const topPostScores = postScores.slice(0, limit);
+        const topPostScores = postScores;
+        const topPostIds = topPostScores.map(p => p.postId);
+
+        const topPosts = await db.Post.findAll({
+            where: { id: topPostIds },
+            include: [{
+                model: db.User,
+                attributes: ["firstName", "lastName", "photo"]
+            }, {
+				model: db.Like,
+				as: 'Likes'
+			}]
+        });
+
+        // Format the response to match the previous version
+        const recommendedPosts = topPosts.map(post => {
+            let returnFile = null;
+            if (post.file) {
+                if (post.fileType === "video") {
+                    returnFile = `data:video/mp4;base64,${post.file.toString('base64')}`;
+                } else if (post.fileType === "audio") {
+                    returnFile = `data:audio/mp3;base64,${post.file.toString('base64')}`;
+                } else {
+                    returnFile = `data:image/jpeg;base64,${post.file.toString('base64')}`;
+                }
+            }
+
+            const returnUserPhoto = post.User.photo
+                ? `data:image/jpeg;base64,${post.User.photo.toString('base64')}`
+                : null;
+
+            return {
+                id: post.id,
+                text: post.text,
+                fileType: post.fileType,
+                file: returnFile,
+                userId: post.User.id,
+                firstName: post.User.firstName,
+                lastName: post.User.lastName,
+                photo: returnUserPhoto,
+				likedByUser: post.Likes.some(like => like.userId === userId)
+
+            };
+        });
+
+        res.status(200).json(recommendedPosts);
+
+    } catch (error) {
+        console.error("Error getting suggested posts:", error);
+        res.status(500).json({ error: error.message });
+    }
 };

@@ -13,6 +13,7 @@ const Chat = require("./chatModels/chat"); // Import the chat model
 const Message = require("./chatModels/message"); // Import the chat model
 const Notification = require("./notification"); // Import the notification model
 const Listing = require("./listing"); // Import the listing model
+const SeenListings = require("./seenListings"); // Import the seenListings model
 
 User.hasMany(Education, { foreignKey: "userId" });
 Education.belongsTo(User, { foreignKey: "userId" });
@@ -76,6 +77,13 @@ Listing.belongsToMany(User, {
 	otherKey: 'userId',
 });
 
+User.belongsToMany(Listing, {
+    as: 'Seen', // Alias for the listings a user has seen
+    through: 'SeenListings', // Junction table
+    foreignKey: 'userId',
+    otherKey: 'listingId',
+});
+
 const db = {
 	sequelize,
 	User,
@@ -90,29 +98,38 @@ const db = {
 	Message,
 	Notification,
 	Listing,
+	SeenListings,
 };
 
 (async () => {
-    const admin = await User.findOne({
-        where: {
-            email: 'admin@admin.com',
-        }
-    });
+	try {
+		await sequelize.sync({ alter: true });
 
-    if (!admin) {
-        const hashedPassword = await bcrypt.hash("admin", 10); // Use await to resolve the promise
-        
-        await User.create({
-            firstName: 'Admin',
-            lastName: ' ',
-            email: 'admin@admin.com',
-            password: hashedPassword, // Ensure this is the resolved string
-            isAdmin: true,
-            phoneNumber: '1234567890',
-            photo: null,
-            hasPhoto: false,
-        });
-    }
+
+		const admin = await User.findOne({
+			where: {
+				email: 'admin@admin.com',
+			}
+		});
+
+		if (!admin) {
+			const hashedPassword = await bcrypt.hash("admin", 10); // Use await to resolve the promise
+			
+			await User.create({
+				firstName: 'Admin',
+				lastName: ' ',
+				email: 'admin@admin.com',
+				password: hashedPassword, // Ensure this is the resolved string
+				isAdmin: true,
+				phoneNumber: '1234567890',
+				photo: null,
+				hasPhoto: false,
+			});
+		}
+	} catch (error) {
+		console.error("Error connecting to the database: ", error);
+		process.exit(1);
+	}
 })();
 
 module.exports = db;

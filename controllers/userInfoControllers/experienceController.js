@@ -11,12 +11,12 @@ exports.create = async (req, res) => {
     
         // Create new experience for the user
         const experience = await db.Experience.create({
-          company,
-          role,
-          startYear,
-          endYear,
-          userId, // Associate the experience with the correct user
-          isPrivate,
+            company,
+            role,
+            startYear,
+            endYear,
+            userId, // Associate the experience with the correct user
+            isPrivate,
         });
     
         res.status(201).json(experience);
@@ -45,9 +45,9 @@ exports.getExperience = async (req, res) => {
         // Handle errors properly
         if (!res.headersSent) {
         // Check if headers are already sent
-        res
-            .status(500)
-            .json({ message: "Error fetching experience", error: error.message });
+            res
+                .status(500)
+                .json({ message: "Error fetching experience", error: error.message });
         }
     }
 };
@@ -105,11 +105,11 @@ exports.delete = async (req, res) => {
 };
 
 exports.getAll = async (req, res) => {
-  try {
-    const experiences = await db.Experience.findAll();
-    res.status(200).json(experiences);
-  } catch (error) {
-    console.error("Error fetching all experiences:", error);
-    res.status(500).json({ error: error.message });
-  }
+    try {
+        const experiences = await db.Experience.findAll();
+        res.status(200).json(experiences);
+    } catch (error) {
+        console.error("Error fetching all experiences:", error);
+        res.status(500).json({ error: error.message });
+    }
 };

@@ -25,8 +25,8 @@ router.put("/experience", authenticateToken, experienceController.update);
 router.delete("/experience", authenticateToken, experienceController.delete);
 
 //! For testing purposes ONLY
-router.get("/allEducation", educationContoller.getAll);
-router.get("/allExperience", experienceController.getAll);
-router.get("/allSkills", skillController.getAll);
+// router.get("/allEducation", educationContoller.getAll);
+// router.get("/allExperience", experienceController.getAll);
+// router.get("/allSkills", skillController.getAll);
 
 module.exports = router;

@@ -17,6 +17,6 @@ router.get("/request/send",authenticateToken, friendlistController.getPendingReq
 router.post("/request/response", authenticateToken, friendlistController.respondToFriendRequest); // respond to a friend request
 
 // For testing purposes
-router.get("/all", friendlistController.getAllFriends); // get all friends regardless of user
+// router.get("/all", friendlistController.getAllFriends); // get all friends regardless of user
 
 module.exports = router;

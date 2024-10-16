@@ -8,9 +8,9 @@ router.get("/:id/applicants", authMiddleware, listingController.getApplicants);
 router.post("/:id/apply", authMiddleware, listingController.applyToListing);
 
 router.post("/", authMiddleware, listingController.create);
-router.put("/:id/", authMiddleware, listingController.update);
-router.delete("/:id/", authMiddleware, listingController.delete);
 router.get("/", authMiddleware, listingController.getListings);
-
+router.post("/:id/seen", authMiddleware, listingController.markAsSeen);
+// router.put("/:id/", authMiddleware, listingController.update); // unused
+// router.delete("/:id/", authMiddleware, listingController.delete); // unused
 
 module.exports = router;

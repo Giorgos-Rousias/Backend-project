@@ -52,7 +52,6 @@ exports.sendFriendRequest = async (req, res) => {
   }
 };
 
-// !Need to reword, should work with friendRequestId instead of friendId
 exports.respondToFriendRequest = async (req, res) => {
   try {
     const userId = req.user.id; // The logged-in user (recipient of the request)
@@ -143,8 +142,6 @@ exports.removeFriend = async (req, res) => {
     friendship.forEach(friend => {
       friend.destroy();
     });
-
-    // await user.removeFriend(friend);
 
     res.status(200).json({ message: "Friend removed successfully!" });
   } catch (error) {

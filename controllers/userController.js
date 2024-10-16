@@ -1,4 +1,3 @@
-// controllers/userController.js
 const { UniqueConstraintError, ValidationError } = require("sequelize");
 const db = require("../models");
 const bcrypt = require("bcryptjs");
@@ -364,7 +363,7 @@ exports.search = async (req , res) => {
 				]
 			},
 			limit: limit,
-			attributes: ["id", "firstName", "lastName", "photo"], // You can choose which attributes to return
+			attributes: ["id", "firstName", "lastName", "photo"],
 			include : [{
 				model: db.Experience,
 				required: false,

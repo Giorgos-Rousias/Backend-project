@@ -188,7 +188,6 @@ exports.getUserChats = async (req, res) => {
 exports.getAllChats = async (req, res) => {
     try {
         const chats = await db.Chat.findAll();
-        // const chats = await db.Chat.findOne();
         res.status(200).json(chats);
     } catch (error) {
         console.error("Error getting all chats:", error);

@@ -48,7 +48,7 @@ User.hasMany(Notification, { foreignKey: "userId" });
 Listing.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(Listing, { foreignKey: "userId" });
 
-// Inside your User model file (models/user.js)
+// Inside model file (models/user.js)
 User.belongsToMany(User, {
 	as: 'Friends',
 	through: 'UserFriends', // Junction table

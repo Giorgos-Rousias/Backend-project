@@ -1,4 +1,3 @@
-// controllers/authController.js
 const { UniqueConstraintError, ValidationError } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -69,7 +68,6 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-
     // Generate a JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, isAdmin: user.isAdmin },
@@ -87,7 +85,6 @@ exports.login = async (req, res) => {
 
     res.status(200).json({ message: "Login successful", token, userInfo });
 
-    // res.status(200).json({ message: "Login successful", token });
   } catch (error) {
     console.error("Error logging in:", error);
     res.status(500).json({ message: "Error logging in", error: error.message });
